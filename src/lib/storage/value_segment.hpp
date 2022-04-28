@@ -32,6 +32,7 @@ class ValueSegment : public AbstractSegment {
 
  protected:
   // Implementation goes here
+  std::vector<T> _segment_data;
 };
 
 }  // namespace opossum
