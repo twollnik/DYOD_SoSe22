@@ -27,6 +27,7 @@ void Table::add_column(const std::string& name, const std::string& type) {
   _column_names.push_back(name);
   _column_types.push_back(type);
   // add column to existing last chunk
+  // TODO: add column to all existing chunks?
   _chunks.back()->create_and_add_segment(type);
 }
 
@@ -50,10 +51,7 @@ ColumnCount Table::column_count() const {
 }
 
 ChunkOffset Table::row_count() const {
-  return std::accumulate(
-    _chunks.begin(), _chunks.end(), ChunkOffset{0}, 
-    [](const ChunkOffset& cur_sum, const auto cur_chunk) { return cur_sum + cur_chunk->size(); }
-  );
+  return _chunks.back()->size() + _target_chunk_size * (chunk_count() - 1);
 }
 
 ChunkID Table::chunk_count() const {

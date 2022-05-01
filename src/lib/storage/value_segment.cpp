@@ -24,7 +24,7 @@ void ValueSegment<T>::append(const AllTypeVariant& val) {
 
 template <typename T>
 ChunkOffset ValueSegment<T>::size() const {
-  return (ChunkOffset) _segment_data.size();
+  return _segment_data.size();
 }
 
 template <typename T>
