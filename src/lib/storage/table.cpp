@@ -27,7 +27,7 @@ void Table::add_column(const std::string& name, const std::string& type) {
   _column_names.push_back(name);
   _column_types.push_back(type);
   // add column to existing last chunk
-  // TODO: add column to all existing chunks?
+  // TODO(all): add column to all existing chunks?
   _chunks.back()->create_and_add_segment(type);
 }
 
@@ -35,28 +35,22 @@ void Table::append(const std::vector<AllTypeVariant>& values) {
   if (_chunks.back()->size() >= target_chunk_size()) {
     create_new_chunk();
   }
-  _chunks.back()->append(values);  
+  _chunks.back()->append(values);
 }
 
 void Table::create_new_chunk() {
   auto new_chunk = std::make_shared<Chunk>();
   for (auto const& type : _column_types) {
-    new_chunk->create_and_add_segment(type); 
+    new_chunk->create_and_add_segment(type);
   }
   _chunks.push_back(new_chunk);
 }
 
-ColumnCount Table::column_count() const {
-  return ColumnCount{_column_names.size()};
-}
+ColumnCount Table::column_count() const { return ColumnCount{_column_names.size()}; }
 
-ChunkOffset Table::row_count() const {
-  return _chunks.back()->size() + _target_chunk_size * (chunk_count() - 1);
-}
+ChunkOffset Table::row_count() const { return _chunks.back()->size() + _target_chunk_size * (chunk_count() - 1); }
 
-ChunkID Table::chunk_count() const {
-  return ChunkID{_chunks.size()};
-}
+ChunkID Table::chunk_count() const { return ChunkID{_chunks.size()}; }
 
 ColumnID Table::column_id_by_name(const std::string& column_name) const {
   auto offset = std::find(_column_names.begin(), _column_names.end(), column_name);
@@ -66,29 +60,17 @@ ColumnID Table::column_id_by_name(const std::string& column_name) const {
   return ColumnID{std::distance(_column_names.begin(), offset)};
 }
 
-ChunkOffset Table::target_chunk_size() const {
-  return _target_chunk_size;
-}
+ChunkOffset Table::target_chunk_size() const { return _target_chunk_size; }
 
-const std::vector<std::string>& Table::column_names() const {
-  return _column_names;
-}
+const std::vector<std::string>& Table::column_names() const { return _column_names; }
 
-const std::string& Table::column_name(const ColumnID column_id) const {
-  return _column_names.at(column_id);
-}
+const std::string& Table::column_name(const ColumnID column_id) const { return _column_names.at(column_id); }
 
-const std::string& Table::column_type(const ColumnID column_id) const {
-  return _column_types.at(column_id);
-}
+const std::string& Table::column_type(const ColumnID column_id) const { return _column_types.at(column_id); }
 
-std::shared_ptr<Chunk> Table::get_chunk(ChunkID chunk_id) {
-  return _chunks.at(chunk_id);
-}
+std::shared_ptr<Chunk> Table::get_chunk(ChunkID chunk_id) { return _chunks.at(chunk_id); }
 
-std::shared_ptr<const Chunk> Table::get_chunk(ChunkID chunk_id) const {
-  return _chunks.at(chunk_id);
-}
+std::shared_ptr<const Chunk> Table::get_chunk(ChunkID chunk_id) const { return _chunks.at(chunk_id); }
 
 void Table::compress_chunk(const ChunkID chunk_id) {
   // Implementation goes here

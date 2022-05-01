@@ -1,12 +1,13 @@
 #include "storage_manager.hpp"
 
-#include <boost/range/combine.hpp>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "utils/assert.hpp"
+
+#include <boost/range/combine.hpp>
 
 namespace opossum {
 
@@ -34,9 +35,7 @@ bool StorageManager::has_table(const std::string& name) const {
   return std::find(_table_names.begin(), _table_names.end(), name) != _table_names.end();
 }
 
-std::vector<std::string> StorageManager::table_names() const {
-  return _table_names;
-}
+std::vector<std::string> StorageManager::table_names() const { return _table_names; }
 
 void StorageManager::print(std::ostream& out) const {
   for (auto const& [table_name, table_ptr] : boost::combine(_table_names, _table_ptrs)) {
@@ -51,9 +50,7 @@ void StorageManager::print(std::ostream& out) const {
   }
 }
 
-void StorageManager::reset() {
-  get() = StorageManager{}; 
-}
+void StorageManager::reset() { get() = StorageManager{}; }
 
 uint16_t StorageManager::get_table_index(const std::string& name) const {
   auto offset = std::find(_table_names.begin(), _table_names.end(), name);

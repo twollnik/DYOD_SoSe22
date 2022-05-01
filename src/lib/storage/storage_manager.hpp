@@ -41,7 +41,7 @@ class StorageManager : private Noncopyable {
   StorageManager(StorageManager&&) = delete;
 
  protected:
-  StorageManager() {} // make constructor non-public
+  StorageManager() {}  // make constructor non-public
   StorageManager& operator=(StorageManager&&) = default;
 
   std::vector<std::string> _table_names;
