@@ -54,4 +54,20 @@ TEST_F(StorageValueSegmentTest, MemoryUsage) {
   EXPECT_EQ(int_value_segment.estimate_memory_usage(), size_t{8});
 }
 
+TEST_F(StorageValueSegmentTest, IndexingOperator) {
+  int_value_segment.append(1);
+  int_value_segment.append(2);
+  EXPECT_EQ(int_value_segment[0], AllTypeVariant{1});
+  EXPECT_EQ(int_value_segment[1], AllTypeVariant{2});
+}
+
+TEST_F(StorageValueSegmentTest, GetValues) {
+  int_value_segment.append(1);
+  int_value_segment.append(2);
+  EXPECT_EQ(int_value_segment.values(), (std::vector<int>{1, 2}));
+  double_value_segment.append(0.0);
+  EXPECT_EQ(double_value_segment.values(), (std::vector<double>{0.0}));
+  EXPECT_EQ(string_value_segment.values(), (std::vector<std::string>{}));
+}
+
 }  // namespace opossum
