@@ -59,7 +59,7 @@ TEST_F(StorageStorageManagerTest, TableNames) {
 
 TEST_F(StorageStorageManagerTest, PrintSimpleTables) {
   auto& storage_manager = StorageManager::get();
-  std::ostringstream oss;
+  auto oss = std::ostringstream{};
   storage_manager.print(oss);
   EXPECT_EQ(oss.str(),
             "=== second_table ===\nn columns: 0\nn rows: 0\nn chunks: 1\ncolumns:\n"
@@ -68,7 +68,7 @@ TEST_F(StorageStorageManagerTest, PrintSimpleTables) {
 
 TEST_F(StorageStorageManagerTest, PrintMoreComplexTables) {
   auto& storage_manager = StorageManager::get();
-  std::ostringstream oss;
+  auto oss = std::ostringstream{};
   auto first_table = storage_manager.get_table("first_table");
   first_table->add_column("first_col", "int");
   first_table->add_column("second_col", "double");

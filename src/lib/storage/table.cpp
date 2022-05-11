@@ -18,16 +18,15 @@
 
 namespace opossum {
 
-Table::Table(const ChunkOffset target_chunk_size) {
-  _target_chunk_size = target_chunk_size;
+Table::Table(const ChunkOffset target_chunk_size) : _target_chunk_size{target_chunk_size} {
   create_new_chunk();
 }
 
 void Table::add_column(const std::string& name, const std::string& type) {
+  Assert(row_count()==0, "columns should only be added to empty tables. "+name+" is not empty");
   _column_names.push_back(name);
   _column_types.push_back(type);
   // add column to existing last chunk
-  // TODO(all): add column to all existing chunks?
   _chunks.back()->create_and_add_segment(type);
 }
 
@@ -46,18 +45,21 @@ void Table::create_new_chunk() {
   _chunks.push_back(new_chunk);
 }
 
-ColumnCount Table::column_count() const { return ColumnCount{_column_names.size()}; }
+ColumnCount Table::column_count() const { return static_cast<ColumnCount>(_column_names.size()); }
 
-ChunkOffset Table::row_count() const { return _chunks.back()->size() + _target_chunk_size * (chunk_count() - 1); }
+ChunkOffset Table::row_count() const { 
+  return std::accumulate(
+    _chunks.begin(), _chunks.end(), ChunkOffset{0}, 
+    [](const ChunkOffset& cur_sum, const auto cur_chunk) { return cur_sum + cur_chunk->size(); }
+  );
+}
 
-ChunkID Table::chunk_count() const { return ChunkID{_chunks.size()}; }
+ChunkID Table::chunk_count() const { return static_cast<ChunkID>(_chunks.size()); }
 
 ColumnID Table::column_id_by_name(const std::string& column_name) const {
-  auto offset = std::find(_column_names.begin(), _column_names.end(), column_name);
-  if (offset == _column_names.end()) {
-    throw std::invalid_argument("requested column name does not exist in table");
-  }
-  return ColumnID{std::distance(_column_names.begin(), offset)};
+  auto iter = std::find(_column_names.begin(), _column_names.end(), column_name);
+  DebugAssert(iter != _column_names.end(), "column "+column_name+" does not exist");
+  return static_cast<ColumnID>(std::distance(_column_names.begin(), iter));
 }
 
 ChunkOffset Table::target_chunk_size() const { return _target_chunk_size; }

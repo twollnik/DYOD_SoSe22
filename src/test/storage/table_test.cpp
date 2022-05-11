@@ -49,6 +49,12 @@ TEST_F(StorageTableTest, RowCount) {
   table.append({6, "world"});
   table.append({3, "!"});
   EXPECT_EQ(table.row_count(), 3u);
+  
+  // should still work with chunks of unequal size
+  table.create_new_chunk();
+  table.create_new_chunk();
+  table.append({6, "lala"});
+  EXPECT_EQ(table.row_count(), 4u);
 }
 
 TEST_F(StorageTableTest, GetColumnName) {
