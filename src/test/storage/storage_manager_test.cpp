@@ -54,7 +54,7 @@ TEST_F(StorageStorageManagerTest, HasTable) {
 
 TEST_F(StorageStorageManagerTest, TableNames) {
   auto& storage_manager = StorageManager::get();
-  EXPECT_EQ(storage_manager.table_names(), (std::vector<std::string>{"first_table", "second_table"}));
+  EXPECT_EQ(storage_manager.table_names(), (std::vector<std::string>{"second_table", "first_table"}));
 }
 
 TEST_F(StorageStorageManagerTest, PrintSimpleTables) {
@@ -62,8 +62,8 @@ TEST_F(StorageStorageManagerTest, PrintSimpleTables) {
   std::ostringstream oss;
   storage_manager.print(oss);
   EXPECT_EQ(oss.str(),
-            "=== first_table ===\nn columns: 0\nn rows: 0\nn chunks: 1\ncolumns:\n"
-            "=== second_table ===\nn columns: 0\nn rows: 0\nn chunks: 1\ncolumns:\n");
+            "=== second_table ===\nn columns: 0\nn rows: 0\nn chunks: 1\ncolumns:\n"
+            "=== first_table ===\nn columns: 0\nn rows: 0\nn chunks: 1\ncolumns:\n");
 }
 
 TEST_F(StorageStorageManagerTest, PrintMoreComplexTables) {
@@ -78,10 +78,10 @@ TEST_F(StorageStorageManagerTest, PrintMoreComplexTables) {
   second_table->add_column("second_table_first_col", "string");
   storage_manager.print(oss);
   EXPECT_EQ(oss.str(),
-            "=== first_table ===\nn columns: 2\nn rows: 2\nn chunks: 1\ncolumns:\n  "
-            "first_col (int)\n  second_col (double)\n"
             "=== second_table ===\nn columns: 1\nn rows: 0\nn chunks: 1\ncolumns:\n  "
-            "second_table_first_col (string)\n");
+            "second_table_first_col (string)\n"
+            "=== first_table ===\nn columns: 2\nn rows: 2\nn chunks: 1\ncolumns:\n  "
+            "first_col (int)\n  second_col (double)\n");
 }
 
 }  // namespace opossum

@@ -12,33 +12,40 @@
 namespace opossum {
 
 StorageManager& StorageManager::get() {
-  static StorageManager instance;
+  static auto instance = StorageManager();
   return instance;
 }
 
 void StorageManager::add_table(const std::string& name, std::shared_ptr<Table> table) {
-  _table_names.push_back(name);
-  _table_ptrs.push_back(table);
+  Assert(!_tables.contains(name), "Table "+name+" already exists. Please drop the existing table first");
+  _tables[name] = table;
 }
 
 void StorageManager::drop_table(const std::string& name) {
-  auto table_index = get_table_index(name);
-  _table_names.erase(_table_names.begin() + table_index);
-  _table_ptrs.erase(_table_ptrs.begin() + table_index);
+  Assert(_tables.contains(name), "Table "+name+" does not exist");
+  _tables.erase(name);
 }
 
 std::shared_ptr<Table> StorageManager::get_table(const std::string& name) const {
-  return _table_ptrs.at(get_table_index(name));
+  DebugAssert(_tables.contains(name), "Table "+name+" does not exist");
+  return _tables.at(name);
 }
 
 bool StorageManager::has_table(const std::string& name) const {
-  return std::find(_table_names.begin(), _table_names.end(), name) != _table_names.end();
+  return _tables.contains(name);
 }
 
-std::vector<std::string> StorageManager::table_names() const { return _table_names; }
+std::vector<std::string> StorageManager::table_names() const { 
+  auto table_names = std::vector<std::string>{};
+  table_names.reserve(_tables.size());
+  for (auto const& [table_name, _] : _tables) {
+    table_names.push_back(table_name);
+  }
+  return table_names;
+}
 
 void StorageManager::print(std::ostream& out) const {
-  for (auto const& [table_name, table_ptr] : boost::combine(_table_names, _table_ptrs)) {
+  for (auto const& [table_name, table_ptr] : _tables) {
     out << "=== " << table_name << " ===" << std::endl;
     out << "n columns: " << table_ptr->column_count() << std::endl;
     out << "n rows: " << table_ptr->row_count() << std::endl;
@@ -51,13 +58,5 @@ void StorageManager::print(std::ostream& out) const {
 }
 
 void StorageManager::reset() { get() = StorageManager{}; }
-
-uint16_t StorageManager::get_table_index(const std::string& name) const {
-  auto offset = std::find(_table_names.begin(), _table_names.end(), name);
-  if (offset == _table_names.end()) {
-    throw std::invalid_argument("table name is unknown");
-  }
-  return std::distance(_table_names.begin(), offset);
-}
 
 }  // namespace opossum
