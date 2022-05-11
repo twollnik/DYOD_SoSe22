@@ -1,24 +1,43 @@
+#include <unordered_map>
+
 #include "dictionary_segment.hpp"
 
 #include "utils/assert.hpp"
+#include "types.hpp"
+#include "type_cast.hpp"
 
 namespace opossum {
 
 template <typename T>
 DictionarySegment<T>::DictionarySegment(const std::shared_ptr<AbstractSegment>& abstract_segment) {
-  // Implementation goes here
+  // keep dictionary indexes in map for quick lookup during construction
+  auto dict_indexes = std::unordered_map<T, uint32_t>();
+  
+  // apply dictionary encoding to input segment
+  auto segment_size = abstract_segment->size();
+  for (ChunkOffset value_index = 0; value_index < segment_size; value_index++) {
+    std::cout << "start of for loop. value_index: " << value_index << std::endl;
+    auto cur_value = type_cast<T>((*abstract_segment)[value_index]);
+    std::cout << "determined cur value: " << cur_value << std::endl;
+    if (!dict_indexes.contains(cur_value)) {
+      _dictionary.push_back(cur_value);
+      dict_indexes[cur_value] = _dictionary.size()-1;
+      std::cout << "inserted new value into dict" << std::endl;
+    }
+    std::cout << "encoding cur value to: " << dict_indexes[cur_value] << std::endl;
+    _attribute_vector->push_back(dict_indexes[cur_value]);
+    std::cout << "encoded cur value" << std::endl;
+  }
 }
 
 template <typename T>
 AllTypeVariant DictionarySegment<T>::operator[](const ChunkOffset chunk_offset) const {
-  // Implementation goes here
-  return AllTypeVariant{};
+  return AllTypeVariant{get(chunk_offset)};
 }
 
 template <typename T>
 T DictionarySegment<T>::get(const ChunkOffset chunk_offset) const {
-  // Implementation goes here
-  return T{};
+  return _dictionary[_attribute_vector->at(chunk_offset)];
 }
 
 template <typename T>
