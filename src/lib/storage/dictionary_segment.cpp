@@ -1,3 +1,4 @@
+#include <set>
 #include <unordered_map>
 
 #include "dictionary_segment.hpp"
@@ -12,22 +13,29 @@ template <typename T>
 DictionarySegment<T>::DictionarySegment(const std::shared_ptr<AbstractSegment>& abstract_segment) 
   : _attribute_vector{std::make_shared<std::vector<uint32_t>>()} {
 
-  // TODO:
-  // - dict should be sorted
-  // - use different uintX_t types
-
-  // keep dictionary indexes in map for quick lookup during construction
-  auto dict_indexes = std::unordered_map<T, uint32_t>();
-  
-  // apply dictionary encoding to input segment
+  // determine unique values and store in sorted set
+  auto dict_values = std::set<T>{};
   auto segment_size = abstract_segment->size();
   for (ChunkOffset value_index = 0; value_index < segment_size; value_index++) {
+    dict_values.emplace(type_cast<T>((*abstract_segment)[value_index]));
+  }
+
+  // build dictionary and store dictionary indexes in hash map for quick lookup during encoding
+  auto dict_indexes = std::unordered_map<T, uint32_t>{};
+  dict_indexes.reserve(dict_values.size());
+  _dictionary.reserve(dict_values.size());
+  auto cur_dict_index = uint32_t{0};
+  for (const auto& value : dict_values) {
+    _dictionary.push_back(value);
+    dict_indexes[value] = cur_dict_index;
+    cur_dict_index++;
+  }
+  
+  // apply dictionary encoding to input segment
+  _attribute_vector->reserve(segment_size);
+  for (ChunkOffset value_index = 0; value_index < segment_size; value_index++) {
     auto cur_value = type_cast<T>((*abstract_segment)[value_index]);
-    if (!dict_indexes.contains(cur_value)) {
-      _dictionary.push_back(cur_value);
-      dict_indexes[cur_value] = _dictionary.size()-1;
-    }
-    _attribute_vector->push_back(dict_indexes.at(cur_value));
+    _attribute_vector->push_back(dict_indexes[cur_value]);
   }
 }
 
