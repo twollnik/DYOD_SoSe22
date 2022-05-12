@@ -41,7 +41,7 @@ DictionarySegment<T>::DictionarySegment(const std::shared_ptr<AbstractSegment>& 
 
 template <typename T>
 AllTypeVariant DictionarySegment<T>::operator[](const ChunkOffset chunk_offset) const {
-  return AllTypeVariant{get(chunk_offset)};
+  return AllTypeVariant{_dictionary[(*_attribute_vector)[chunk_offset]]};
 }
 
 template <typename T>
