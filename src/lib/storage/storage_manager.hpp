@@ -44,11 +44,7 @@ class StorageManager : private Noncopyable {
   StorageManager() {}  // make constructor non-public
   StorageManager& operator=(StorageManager&&) = default;
 
-  std::vector<std::string> _table_names;
-  std::vector<std::shared_ptr<Table>> _table_ptrs;
-
-  // find the position of the table in the _table_names
-  uint16_t get_table_index(const std::string& name) const;
+  std::unordered_map<std::string, std::shared_ptr<Table>> _tables{};
 };
 
 }  // namespace opossum

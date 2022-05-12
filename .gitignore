@@ -39,3 +39,5 @@ gcoverage
 # llvm coverage information
 default.profdata
 default.profraw
+
+*.swp
