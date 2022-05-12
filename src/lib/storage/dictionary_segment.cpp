@@ -9,24 +9,25 @@
 namespace opossum {
 
 template <typename T>
-DictionarySegment<T>::DictionarySegment(const std::shared_ptr<AbstractSegment>& abstract_segment) {
+DictionarySegment<T>::DictionarySegment(const std::shared_ptr<AbstractSegment>& abstract_segment) 
+  : _attribute_vector{std::make_shared<std::vector<uint32_t>>()} {
+
+  // TODO:
+  // - dict should be sorted
+  // - use different uintX_t types
+
   // keep dictionary indexes in map for quick lookup during construction
   auto dict_indexes = std::unordered_map<T, uint32_t>();
   
   // apply dictionary encoding to input segment
   auto segment_size = abstract_segment->size();
   for (ChunkOffset value_index = 0; value_index < segment_size; value_index++) {
-    std::cout << "start of for loop. value_index: " << value_index << std::endl;
     auto cur_value = type_cast<T>((*abstract_segment)[value_index]);
-    std::cout << "determined cur value: " << cur_value << std::endl;
     if (!dict_indexes.contains(cur_value)) {
       _dictionary.push_back(cur_value);
       dict_indexes[cur_value] = _dictionary.size()-1;
-      std::cout << "inserted new value into dict" << std::endl;
     }
-    std::cout << "encoding cur value to: " << dict_indexes[cur_value] << std::endl;
-    _attribute_vector->push_back(dict_indexes[cur_value]);
-    std::cout << "encoded cur value" << std::endl;
+    _attribute_vector->push_back(dict_indexes.at(cur_value));
   }
 }
 
@@ -47,8 +48,7 @@ void DictionarySegment<T>::append(const AllTypeVariant& value) {
 
 template <typename T>
 const std::vector<T>& DictionarySegment<T>::dictionary() const {
-  // Implementation goes here
-  Fail("Implementation is missing.");
+  return _dictionary;
 }
 
 template <typename T>
@@ -89,14 +89,12 @@ ValueID DictionarySegment<T>::upper_bound(const AllTypeVariant& value) const {
 
 template <typename T>
 ChunkOffset DictionarySegment<T>::unique_values_count() const {
-  // Implementation goes here
-  return ChunkOffset{};
+  return static_cast<ChunkOffset>(_dictionary.size());
 }
 
 template <typename T>
 ChunkOffset DictionarySegment<T>::size() const {
-  // Implementation goes here
-  return ChunkOffset{};
+  return static_cast<ChunkOffset>(_attribute_vector->size());
 }
 
 template <typename T>
