@@ -41,10 +41,10 @@ class StorageManager : private Noncopyable {
   StorageManager(StorageManager&&) = delete;
 
  protected:
-  StorageManager() {}
+  StorageManager() {}  // make constructor non-public
   StorageManager& operator=(StorageManager&&) = default;
 
-  // Implementation goes here
+  std::unordered_map<std::string, std::shared_ptr<Table>> _tables{};
 };
 
 }  // namespace opossum
