@@ -28,6 +28,9 @@ class Chunk : private Noncopyable {
   // Adds a segment to the "right" of the chunk.
   void add_segment(const std::shared_ptr<AbstractSegment> segment);
 
+  // Instantiates and adds a ValueSegment for the given type
+  void create_and_add_segment(const std::string& type);
+
   // Returns the number of columns (cannot exceed ColumnID (uint16_t)).
   ColumnCount column_count() const;
 
@@ -43,6 +46,7 @@ class Chunk : private Noncopyable {
 
  protected:
   // Implementation goes here
+  std::vector<std::shared_ptr<AbstractSegment>> _segments{};
 };
 
 }  // namespace opossum
