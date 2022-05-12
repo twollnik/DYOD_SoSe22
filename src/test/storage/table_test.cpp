@@ -89,13 +89,19 @@ TEST_F(StorageTableTest, CompressChunk) {
   auto encoded_chunk = table.get_chunk(ChunkID{0});
   auto dict_seg_0 = static_cast<DictionarySegment<int>>(encoded_chunk->get_segment(ColumnID{0}));
   auto dict_seg_1 = static_cast<DictionarySegment<std::string>>(encoded_chunk->get_segment(ColumnID{1}));
+  auto att_vec_0 = dict_seg_0.attribute_vector();
+  auto att_vec_1 = dict_seg_1.attribute_vector();
 
   EXPECT_EQ(encoded_chunk->size(), 2u);
   EXPECT_EQ(encoded_chunk->column_count(), 2u);
   EXPECT_EQ(dict_seg_0.dictionary(), (std::vector<int>{4,6}));
-  EXPECT_EQ(*dict_seg_0.attribute_vector(), (std::vector<uint32_t>{0,1}));
   EXPECT_EQ(dict_seg_1.dictionary(), (std::vector<std::string>{"Hello"}));
-  EXPECT_EQ(*dict_seg_1.attribute_vector(), (std::vector<uint32_t>{0, 0}));
+  EXPECT_EQ(att_vec_0->get(0), 0);
+  EXPECT_EQ(att_vec_0->get(1), 1);
+  EXPECT_EQ(att_vec_1->get(0), 0);
+  EXPECT_EQ(att_vec_1->get(1), 0);
+  EXPECT_ANY_THROW(att_vec_0->get(2));
+  EXPECT_ANY_THROW(att_vec_1->get(2));
 
   EXPECT_ANY_THROW(table.compress_chunk(ChunkID{3}));
 

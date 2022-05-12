@@ -130,8 +130,12 @@ TEST_F(StorageDictionarySegmentTest, AccessingUnderlyingDataStructures) {
   EXPECT_EQ(dict_segment_str->dictionary(), (std::vector<std::string>{}));
 
   // test accessing the underlying attribute vector
-  EXPECT_EQ(*(dict_segment_int->attribute_vector()), (std::vector<uint32_t>{0,1,1}));
-  EXPECT_EQ(*(dict_segment_str->attribute_vector()), (std::vector<uint32_t>{}));
+  auto att_vec_int = dict_segment_int->attribute_vector();
+  auto att_vec_str = dict_segment_str->attribute_vector();
+  EXPECT_EQ(att_vec_int->get(0), uint32_t{0});
+  EXPECT_EQ(att_vec_int->get(1), uint32_t{1});
+  EXPECT_EQ(att_vec_int->get(2), uint32_t{1});
+  EXPECT_ANY_THROW(att_vec_int->get(0));
 }
 
 TEST_F(StorageDictionarySegmentTest, ValueOfValueId) {
