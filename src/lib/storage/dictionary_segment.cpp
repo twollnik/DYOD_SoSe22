@@ -60,39 +60,48 @@ const std::vector<T>& DictionarySegment<T>::dictionary() const {
 }
 
 template <typename T>
-std::shared_ptr<const AbstractAttributeVector> DictionarySegment<T>::attribute_vector() const {
-  // Implementation goes here
-  return nullptr;
+std::shared_ptr<const std::vector<uint32_t>> DictionarySegment<T>::attribute_vector() const {
+  return _attribute_vector;
 }
 
 template <typename T>
 const T DictionarySegment<T>::value_of_value_id(const ValueID value_id) const {
-  // Implementation goes here
-  Fail("Implementation is missing.");
+  return _dictionary.at(value_id);
 }
 
 template <typename T>
 ValueID DictionarySegment<T>::lower_bound(const T value) const {
-  // Implementation goes here
-  return ValueID{};
+  auto n_values = size();
+  for (auto indx = size_t{0}; indx < n_values; indx++) {
+    auto value_at_indx = _dictionary[(*_attribute_vector)[indx]];
+    if (value_at_indx >= value) {
+      return static_cast<ValueID>(indx);
+    }
+  }
+  return INVALID_VALUE_ID;
 }
 
 template <typename T>
 ValueID DictionarySegment<T>::lower_bound(const AllTypeVariant& value) const {
-  // Implementation goes here
-  return ValueID{};
+  return lower_bound(type_cast<T>(value));
 }
 
 template <typename T>
 ValueID DictionarySegment<T>::upper_bound(const T value) const {
-  // Implementation goes here
-  return ValueID{};
+  // TODO: reduce code duplication with lower_bound function
+  auto n_values = size();
+  for (auto indx = size_t{0}; indx < n_values; indx++) {
+    auto value_at_indx = _dictionary[(*_attribute_vector)[indx]];
+    if (value_at_indx > value) {
+      return static_cast<ValueID>(indx);
+    }
+  }
+  return INVALID_VALUE_ID;
 }
 
 template <typename T>
 ValueID DictionarySegment<T>::upper_bound(const AllTypeVariant& value) const {
-  // Implementation goes here
-  return ValueID{};
+  return upper_bound(type_cast<T>(value));
 }
 
 template <typename T>
