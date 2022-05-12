@@ -12,7 +12,7 @@
 namespace opossum {
 
 StorageManager& StorageManager::get() {
-  static auto instance = StorageManager();
+  static auto instance = StorageManager{};
   return instance;
 }
 
