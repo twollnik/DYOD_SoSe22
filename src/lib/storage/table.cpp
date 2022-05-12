@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "value_segment.hpp"
+#include "dictionary_segment.hpp"
 
 #include "resolve_type.hpp"
 #include "types.hpp"
@@ -75,8 +76,24 @@ std::shared_ptr<Chunk> Table::get_chunk(ChunkID chunk_id) { return _chunks.at(ch
 std::shared_ptr<const Chunk> Table::get_chunk(ChunkID chunk_id) const { return _chunks.at(chunk_id); }
 
 void Table::compress_chunk(const ChunkID chunk_id) {
-  // Implementation goes here
-  Fail("Implementation is missing.");
+
+  // create new chunk with dict encoded segments
+  auto old_chunk = get_chunk(chunk_id);
+  auto new_chunk = std::make_shared<Chunk>();
+  auto n_segments = old_chunk->size();
+  for (auto segment_indx = ColumnID{0}; segment_indx < n_segments; segment_indx++) {
+    auto segment = static_cast<std::shared_ptr<AbstractSegment>>(old_chunk->get_segment(segment_indx));
+
+    resolve_data_type(column_type(segment_indx), [&](auto type) {
+      using Type = typename decltype(type)::type;
+      segment = std::make_shared<DictionarySegment<Type>>(segment);
+    }); 
+    new_chunk->add_segment(segment);
+  }
+
+  // swap in new dict encoded chunk
+  // TODO: consider concurrent accesses when exchanging the chunk
+  _chunks[chunk_id] = new_chunk;
 }
 
 }  // namespace opossum
