@@ -28,8 +28,8 @@ class AbstractAttributeVector : private Noncopyable {
   // returns the width of biggest value id in bytes
   virtual AttributeVectorWidth width() const = 0;
 
-  virtual void reserve(const size_t capacity);
-  virtual void add_value(const ValueID value_id);
+  virtual void reserve(const size_t capacity) = 0;
+  virtual void add_value(const ValueID value_id) = 0;
 };
 
 }  // namespace opossum

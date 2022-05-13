@@ -1,6 +1,7 @@
 # Sources and libraries shared among the different builds of the lib
 set(
     SOURCES
+    storage/fixed_width_integer_vector.hpp
     all_type_variant.hpp
     resolve_type.hpp
     storage/abstract_attribute_vector.hpp

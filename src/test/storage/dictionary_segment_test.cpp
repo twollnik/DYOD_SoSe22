@@ -84,7 +84,6 @@ TEST_F(StorageDictionarySegmentTest, AccessingElements) {
   // test [] operator
   EXPECT_EQ((*dict_segment)[ChunkOffset{0}], AllTypeVariant{1});
   EXPECT_EQ((*dict_segment)[ChunkOffset{1}], AllTypeVariant{2});
-  EXPECT_NO_THROW((*dict_segment)[100]);
 
   // test get function
   EXPECT_EQ(dict_segment->get(ChunkOffset{0}), 1);
@@ -135,7 +134,7 @@ TEST_F(StorageDictionarySegmentTest, AccessingUnderlyingDataStructures) {
   EXPECT_EQ(att_vec_int->get(0), uint32_t{0});
   EXPECT_EQ(att_vec_int->get(1), uint32_t{1});
   EXPECT_EQ(att_vec_int->get(2), uint32_t{1});
-  EXPECT_ANY_THROW(att_vec_int->get(0));
+  EXPECT_ANY_THROW(att_vec_str->get(0));
 }
 
 TEST_F(StorageDictionarySegmentTest, ValueOfValueId) {

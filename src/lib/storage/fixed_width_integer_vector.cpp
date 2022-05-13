@@ -6,12 +6,12 @@
 namespace opossum {
 
 template <typename uintX_t>
-ValueID FixedWidthIntegerVector<uintX_t>::get(const size_t index) const {
-  return _vector.at(index);
+ValueID FixedWidthIntegerVector<uintX_t>::get(const size_t index) const {
+  return static_cast<ValueID>(_vector.at(index));
 }
 
 template <typename uintX_t>
-void FixedWidthIntegerVector<uintX_t>::set(const size_t index, const ValueID value_id) {
+void FixedWidthIntegerVector<uintX_t>::set(const size_t index, const ValueID value_id) {
   _vector[index] = static_cast<uintX_t>(value_id);
 }
 
@@ -26,12 +26,12 @@ AttributeVectorWidth FixedWidthIntegerVector<uintX_t>::width() const {
 }
 
 template <typename uintX_t>
-void FixedWidthIntegerVector<uintX_t>::reserve(const size_t capacity) {
+void FixedWidthIntegerVector<uintX_t>::reserve(const size_t capacity) {
   return _vector.reserve(capacity);
 }
 
 template <typename uintX_t>
-void FixedWidthIntegerVector<uintX_t>::add_value(const ValueID value_id) {
+void FixedWidthIntegerVector<uintX_t>::add_value(const ValueID value_id) {
   _vector.push_back(static_cast<uintX_t>(value_id));
 }
 
