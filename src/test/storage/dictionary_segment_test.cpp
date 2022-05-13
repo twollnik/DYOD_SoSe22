@@ -131,9 +131,9 @@ TEST_F(StorageDictionarySegmentTest, AccessingUnderlyingDataStructures) {
   // test accessing the underlying attribute vector
   auto att_vec_int = dict_segment_int->attribute_vector();
   auto att_vec_str = dict_segment_str->attribute_vector();
-  EXPECT_EQ(att_vec_int->get(0), uint32_t{0});
-  EXPECT_EQ(att_vec_int->get(1), uint32_t{1});
-  EXPECT_EQ(att_vec_int->get(2), uint32_t{1});
+  EXPECT_EQ(att_vec_int->get(0), int32_t{0});
+  EXPECT_EQ(att_vec_int->get(1), int32_t{1});
+  EXPECT_EQ(att_vec_int->get(2), int32_t{1});
   EXPECT_ANY_THROW(att_vec_str->get(0));
 }
 
@@ -152,6 +152,45 @@ TEST_F(StorageDictionarySegmentTest, ValueOfValueId) {
   EXPECT_EQ(dict_segment->value_of_value_id(ValueID{0}), 1);
   EXPECT_EQ(dict_segment->value_of_value_id(ValueID{1}), 2);
   EXPECT_ANY_THROW(dict_segment->value_of_value_id(ValueID{2}));
+}
+
+TEST_F(StorageDictionarySegmentTest, UInt8) {
+  for (int32_t index = 0; index < 100; ++index) {
+    value_segment_int->append(index);
+  }
+  value_segment_int->append(42);
+  auto column = std::make_shared<DictionarySegment<int32_t>>(value_segment_int);
+  auto dict_col = std::dynamic_pointer_cast<opossum::DictionarySegment<int32_t>>(column);
+
+  EXPECT_EQ(dict_col->estimate_memory_usage(), 100 * sizeof(int32_t) + 101 * sizeof(uint8_t));
+
+  value_segment_str->append("Hello");
+  auto column_str = std::make_shared<DictionarySegment<std::string>>(value_segment_str);
+  auto dict_col_str = std::dynamic_pointer_cast<opossum::DictionarySegment<std::string>>(column_str);
+
+  EXPECT_EQ(dict_col_str->estimate_memory_usage(), 1 * sizeof(std::string) + 1 * sizeof(uint8_t));
+}
+
+TEST_F(StorageDictionarySegmentTest, UInt16) {
+  for (int32_t index = 0; index < 256; ++index) {
+    value_segment_int->append(index);
+  }
+  auto column = std::make_shared<DictionarySegment<int32_t>>(value_segment_int);
+  auto dict_col = std::dynamic_pointer_cast<opossum::DictionarySegment<int32_t>>(column);
+
+  EXPECT_EQ(dict_col->estimate_memory_usage(), 256 * sizeof(int32_t) + 256 * sizeof(uint16_t));
+}
+
+TEST_F(StorageDictionarySegmentTest, UInt32) {
+  for (int32_t index = 0; index < 65536; ++index) {
+    value_segment_int->append(index);
+  }
+
+  auto column = std::make_shared<DictionarySegment<int32_t>>(value_segment_int);
+  auto dict_col = std::dynamic_pointer_cast<opossum::DictionarySegment<int32_t>>(column);
+
+  EXPECT_EQ(dict_col->estimate_memory_usage(), 65536 * sizeof(int32_t) + 65536 * sizeof(int32_t));
+  EXPECT_THROW(dict_col->append(0), std::exception);
 }
 
 }  // namespace opossum
