@@ -2,6 +2,7 @@
 set(
     SOURCES
     storage/fixed_width_integer_vector.hpp
+    storage/fixed_width_integer_vector.cpp
     all_type_variant.hpp
     resolve_type.hpp
     storage/abstract_attribute_vector.hpp

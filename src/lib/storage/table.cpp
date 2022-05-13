@@ -77,22 +77,31 @@ std::shared_ptr<const Chunk> Table::get_chunk(ChunkID chunk_id) const { return _
 
 void Table::compress_chunk(const ChunkID chunk_id) {
 
-  // create new chunk with dict encoded segments
   auto old_chunk = get_chunk(chunk_id);
-  auto new_chunk = std::make_shared<Chunk>();
   auto n_segments = old_chunk->size();
-  for (auto segment_indx = ColumnID{0}; segment_indx < n_segments; segment_indx++) {
-    auto segment = static_cast<std::shared_ptr<AbstractSegment>>(old_chunk->get_segment(segment_indx));
+  auto new_chunk = std::make_shared<Chunk>(ColumnID{n_segments});
 
-    resolve_data_type(column_type(segment_indx), [&](auto type) {
-      using Type = typename decltype(type)::type;
-      segment = std::make_shared<DictionarySegment<Type>>(segment);
-    }); 
-    new_chunk->add_segment(segment);
+  auto compression_worker_lambda = [this, &old_chunk, &new_chunk](const ColumnID column_id) {
+    const auto& segment = old_chunk->get_segment(column_id);
+    const auto& type = this->column_type(column_id);
+    resolve_data_type(type, [&](const auto data_type_t) {
+      using ColumnDataType = typename decltype(data_type_t)::type;
+      const auto dictionary_segment = std::make_shared<DictionarySegment<ColumnDataType>>(segment);
+      new_chunk->add_segment_at(dictionary_segment, column_id);
+    });
+  };
+
+  auto threads = std::vector<std::thread>();
+  for (auto column_index = ColumnID{0}; column_index < n_segments; ++column_index) {
+    auto worker = std::thread(compression_worker_lambda, column_index);
+    threads.emplace_back(std::move(worker));
+  }
+  for (size_t thread_id = 0; thread_id < n_segments; ++thread_id) {
+    threads[thread_id].join();
   }
 
   // swap in new dict encoded chunk
-  // TODO: consider concurrent accesses when exchanging the chunk
+  // TODO(all): consider concurrent accesses when exchanging the chunk?
   _chunks[chunk_id] = new_chunk;
 }
 

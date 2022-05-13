@@ -69,7 +69,7 @@ class DictionarySegment : public AbstractSegment {
 
  protected:
   std::vector<T> _dictionary{};
-  std::shared_ptr<AbstractAttributeVector> _attribute_vector;
+  std::shared_ptr<AbstractAttributeVector> _attribute_vector{};
 };
 
 }  // namespace opossum
