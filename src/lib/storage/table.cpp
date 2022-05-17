@@ -77,6 +77,8 @@ std::shared_ptr<const Chunk> Table::get_chunk(ChunkID chunk_id) const { return _
 
 void Table::compress_chunk(const ChunkID chunk_id) {
 
+  DebugAssert(chunk_id < chunk_count(), "invalid chunk id "+std::to_string(chunk_id)+". table only has "+std::to_string(chunk_count())+" chunks");
+
   auto old_chunk = get_chunk(chunk_id);
   auto n_segments = old_chunk->size();
   auto new_chunk = std::make_shared<Chunk>(ColumnID{n_segments});

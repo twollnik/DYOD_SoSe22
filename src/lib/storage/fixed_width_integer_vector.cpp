@@ -16,6 +16,7 @@ ValueID FixedWidthIntegerVector<uintX_t>::get(const size_t index) const {
 
 template <typename uintX_t>
 void FixedWidthIntegerVector<uintX_t>::set(const size_t index, const ValueID value_id) {
+  DebugAssert(index < size(), "index "+std::to_string(index)+" out of bounds for FixedWidthIntegerVector with size "+std::to_string(size()));
   _vector[index] = static_cast<uintX_t>(value_id);
 }
 
