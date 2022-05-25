@@ -1,6 +1,8 @@
 # Sources and libraries shared among the different builds of the lib
 set(
     SOURCES
+    storage/fixed_width_integer_vector.hpp
+    storage/fixed_width_integer_vector.cpp
     all_type_variant.hpp
     operators/abstract_operator.cpp
     operators/abstract_operator.hpp

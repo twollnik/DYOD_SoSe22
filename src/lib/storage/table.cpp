@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "value_segment.hpp"
+#include "dictionary_segment.hpp"
 
 #include "resolve_type.hpp"
 #include "types.hpp"
@@ -79,8 +80,35 @@ std::shared_ptr<Chunk> Table::get_chunk(ChunkID chunk_id) { return _chunks.at(ch
 std::shared_ptr<const Chunk> Table::get_chunk(ChunkID chunk_id) const { return _chunks.at(chunk_id); }
 
 void Table::compress_chunk(const ChunkID chunk_id) {
-  // Implementation goes here
-  Fail("Implementation is missing.");
+
+  DebugAssert(chunk_id < chunk_count(), "invalid chunk id "+std::to_string(chunk_id)+". table only has "+std::to_string(chunk_count())+" chunks");
+
+  auto old_chunk = get_chunk(chunk_id);
+  auto n_segments = old_chunk->size();
+  auto new_chunk = std::make_shared<Chunk>(ColumnID{n_segments});
+
+  auto compression_worker_lambda = [this, &old_chunk, &new_chunk](const ColumnID column_id) {
+    const auto& segment = old_chunk->get_segment(column_id);
+    const auto& type = this->column_type(column_id);
+    resolve_data_type(type, [&](const auto data_type_t) {
+      using ColumnDataType = typename decltype(data_type_t)::type;
+      const auto dictionary_segment = std::make_shared<DictionarySegment<ColumnDataType>>(segment);
+      new_chunk->add_segment_at(dictionary_segment, column_id);
+    });
+  };
+
+  auto threads = std::vector<std::thread>();
+  for (auto column_index = ColumnID{0}; column_index < n_segments; ++column_index) {
+    auto worker = std::thread(compression_worker_lambda, column_index);
+    threads.emplace_back(std::move(worker));
+  }
+  for (size_t thread_id = 0; thread_id < n_segments; ++thread_id) {
+    threads[thread_id].join();
+  }
+
+  // swap in new dict encoded chunk
+  // TODO(all): consider concurrent accesses when exchanging the chunk?
+  _chunks[chunk_id] = new_chunk;
 }
 
 }  // namespace opossum
