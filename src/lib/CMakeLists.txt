@@ -21,6 +21,7 @@ set(
     storage/dictionary_segment.cpp
     storage/dictionary_segment.hpp
     storage/reference_segment.hpp
+    storage/reference_segment.cpp
     storage/storage_manager.cpp
     storage/storage_manager.hpp
     storage/table.cpp
