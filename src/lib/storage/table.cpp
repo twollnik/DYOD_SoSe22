@@ -84,7 +84,7 @@ void Table::compress_chunk(const ChunkID chunk_id) {
   DebugAssert(chunk_id < chunk_count(), "invalid chunk id "+std::to_string(chunk_id)+". table only has "+std::to_string(chunk_count())+" chunks");
 
   auto old_chunk = get_chunk(chunk_id);
-  auto n_segments = old_chunk->size();
+  auto n_segments = old_chunk->column_count();
   auto new_chunk = std::make_shared<Chunk>(ColumnID{n_segments});
 
   auto compression_worker_lambda = [this, &old_chunk, &new_chunk](const ColumnID column_id) {
@@ -102,8 +102,8 @@ void Table::compress_chunk(const ChunkID chunk_id) {
     auto worker = std::thread(compression_worker_lambda, column_index);
     threads.emplace_back(std::move(worker));
   }
-  for (size_t thread_id = 0; thread_id < n_segments; ++thread_id) {
-    threads[thread_id].join();
+  for (auto& thread : threads) {
+    thread.join();
   }
 
   // swap in new dict encoded chunk

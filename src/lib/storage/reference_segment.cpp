@@ -24,20 +24,13 @@ ReferenceSegment::ReferenceSegment(
     _pos{pos} {}
 
 AllTypeVariant ReferenceSegment::operator[](const ChunkOffset chunk_offset) const {
-  DebugAssert(chunk_offset < referenced_table()->row_count(), "invalid chunk offset");
-  // find the right chunk and fetch the value from there
-  auto n_chunks = referenced_table()->chunk_count();
-  auto cur_row = ChunkOffset{0};
-  for (auto cur_chunk_id = ChunkID{0}; cur_chunk_id < n_chunks; ++cur_chunk_id) {
-    auto cur_chunk = referenced_table()->get_chunk(cur_chunk_id);
-    if (cur_row + cur_chunk->size() < chunk_offset) {
-      // the target row is in this chunk
-      return (*(cur_chunk->get_segment(referenced_column_id())))[chunk_offset-cur_row];
-    } else {
-      cur_row = cur_row + cur_chunk->size();
-    }
-  }
-  throw std::runtime_error("ran out of chunks to check");
+  DebugAssert(
+    chunk_offset < size(),
+    "invalid chunk offset "+std::to_string(chunk_offset)+" for reference segment with "+std::to_string(size())+" rows"
+  );
+  auto row_id = _pos->at(chunk_offset);
+  auto segment = _referenced_table->get_chunk(row_id.chunk_id)->get_segment(_referenced_column_id);
+  return (*segment)[row_id.chunk_offset];
 }
 
 void ReferenceSegment::append(const AllTypeVariant&) { throw std::logic_error("ReferenceSegment is immutable"); }
