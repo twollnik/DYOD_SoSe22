@@ -17,23 +17,21 @@ StorageManager& StorageManager::get() {
 }
 
 void StorageManager::add_table(const std::string& name, std::shared_ptr<Table> table) {
-  Assert(!_tables.contains(name), "Table "+name+" already exists. Please drop the existing table first");
+  Assert(!_tables.contains(name), "Table " + name + " already exists. Please drop the existing table first");
   _tables[name] = table;
 }
 
 void StorageManager::drop_table(const std::string& name) {
-  Assert(_tables.contains(name), "Table "+name+" does not exist");
+  Assert(_tables.contains(name), "Table " + name + " does not exist");
   _tables.erase(name);
 }
 
 std::shared_ptr<Table> StorageManager::get_table(const std::string& name) const {
-  DebugAssert(_tables.contains(name), "Table "+name+" does not exist");
+  DebugAssert(_tables.contains(name), "Table " + name + " does not exist");
   return _tables.at(name);
 }
 
-bool StorageManager::has_table(const std::string& name) const {
-  return _tables.contains(name);
-}
+bool StorageManager::has_table(const std::string& name) const { return _tables.contains(name); }
 
 std::vector<std::string> StorageManager::table_names() const {
   auto table_names = std::vector<std::string>{};
