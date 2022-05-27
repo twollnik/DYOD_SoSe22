@@ -103,7 +103,16 @@ void TableScan::scan_segment(
   const std::shared_ptr<PosList> pos_list_ptr,
   const ChunkID chunk_id
 ) {
-  // TODO
+  auto dictionary = segment_ptr->dictionary();
+  auto attribute_vector_ptr = segment_ptr->attribute_vector();
+  auto n_values = attribute_vector_ptr->size();
+  for (auto offset = ChunkOffset{0}; offset < n_values; ++offset) {
+    auto value = dictionary[attribute_vector_ptr->get(offset)];
+    if (matches_search_value<T>(value)) {
+      pos_list_ptr->emplace_back(RowID{chunk_id, offset});
+    }
+  }
+
 }
 
 template<typename T>
