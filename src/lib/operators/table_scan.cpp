@@ -42,107 +42,132 @@ std::shared_ptr<const Table> TableScan::_on_execute() {
   auto n_chunks = in_table_ptr->chunk_count();
   auto data_type = in_table_ptr->column_type(_column_id);
 
-  // accumulate the scan results here. 
+  // accumulate the scan results here. We will have one chunk
+  // for each chunk in the input table (that has at least one 
+  // row matching the filter).
   auto result_chunks_ptr = std::make_shared<std::vector<std::shared_ptr<Chunk>>>();
 
-  // iterate over all chunks in the input table and process each chunk seperately
+  // iterate over all chunks in the input table and process each chunk seperately.
+  // We first determine which rows should be included in the output table,
+  // i.e. which rows match the filter condition. Then, we construct new
+  // chunks that consist of reference segments and make up the output table.
   for (auto chunk_id = ChunkID{0}; chunk_id < n_chunks; ++chunk_id) {
     auto chunk_ptr = in_table_ptr->get_chunk(chunk_id);
-    auto include_rows = scan_chunk(chunk_ptr, chunk_id, data_type);
-    if (!include_rows->empty()) {
-      auto out_chunk = subset_chunk(in_table_ptr, chunk_ptr, chunk_id, include_rows);
+    auto include_rows_ptr = scan_chunk(chunk_ptr, chunk_id, data_type);
+    if (!include_rows_ptr->empty()) {
+      auto out_chunk = subset_chunk(in_table_ptr, chunk_ptr, chunk_id, include_rows_ptr);
       result_chunks_ptr->emplace_back(out_chunk);
     }
   }
 
-  // build output table
+  // build the output table. There are two cases: 
+  // (1) if the result set is empty (i.e. no rows match
+  // the filter condition) we create an empty table. The empty table
+  // has the same column definitions (i.e. column names and types) as the input table.
+  // (2) if there are rows in the result set we create a new table with the
+  // chunks that we have already constructed. We copy the column configuration 
+  // from the input table by using Table's specialized constructor.
   if (result_chunks_ptr->empty()) {
-    // the result set is empty. Create an empty table and add the column definitions
     auto out_table_ptr = std::make_shared<Table>();
     for (auto col_id = ColumnID{0}; col_id < n_columns; ++col_id) {
       out_table_ptr->add_column(in_table_ptr->column_name(col_id), in_table_ptr->column_type(col_id));
     }
     return out_table_ptr;
   } else {
-    // the scan has found results. Create a table with the results and copy the column names and types from the input table
     return std::make_shared<Table>(*result_chunks_ptr, in_table_ptr);
   }
 }
-
 
 const std::shared_ptr<std::vector<ChunkOffset>> TableScan::scan_chunk(
   const std::shared_ptr<const Chunk> chunk_ptr, 
   const ChunkID chunk_id,
   const std::string data_type
 ) const {
+  // determine the set of rows that should be included in the scan output,
+  // i.e. find the row indexes that match the filter condition.
 
-  // determine the set of rows that should be included in the scan output
-  auto include_rows = std::make_shared<std::vector<ChunkOffset>>();
+  // accumulate the indexes of the rows that should be included in the output here
+  auto include_rows_ptr = std::make_shared<std::vector<ChunkOffset>>();
+
+  // get segment that we want to filter on and cast it to the right type. Then,
+  // perform a scan on the segment based on the segment type (value/dict/reference).
   auto segment_ptr = chunk_ptr->get_segment(_column_id);
   resolve_data_type(data_type, [&](auto type) {
     using Type = typename decltype(type)::type;
-    // case 1: filter segment is value segment
+    // case 1: segment is value segment
     const auto typed_value_segment_ptr = std::dynamic_pointer_cast<ValueSegment<Type>>(segment_ptr);
     if (typed_value_segment_ptr) {
-      scan_segment<Type>(typed_value_segment_ptr, include_rows);
-      return include_rows;
+      scan_segment<Type>(typed_value_segment_ptr, include_rows_ptr);
+      return include_rows_ptr;
     }
-    // case 2: filter segment is dictionary segment
+    // case 2: segment is dictionary segment
     const auto typed_dict_segment_ptr = std::dynamic_pointer_cast<DictionarySegment<Type>>(segment_ptr);
     if (typed_dict_segment_ptr) {
-      scan_segment<Type>(typed_dict_segment_ptr, include_rows);
-      return include_rows;
+      scan_segment<Type>(typed_dict_segment_ptr, include_rows_ptr);
+      return include_rows_ptr;
     }
-    // case 3: filter segment is reference segment
+    // case 3: segment is reference segment
     const auto ref_segment_ptr = std::dynamic_pointer_cast<ReferenceSegment>(segment_ptr);
     if (ref_segment_ptr) {
-      scan_segment<Type>(ref_segment_ptr, include_rows);
-      return include_rows;
+      scan_segment<Type>(ref_segment_ptr, include_rows_ptr);
+      return include_rows_ptr;
     }
+
+    // we do not support any segment types beyond value, dict, and reference segments
     throw std::runtime_error("unrecognized segment class at chunk id "+std::to_string(chunk_id)+" and column id "+std::to_string(_column_id));
   });
 
-  return include_rows;
+  return include_rows_ptr;
 }
 
 const std::shared_ptr<Chunk> TableScan::subset_chunk(
   const std::shared_ptr<const Table> table_ptr,
   const std::shared_ptr<const Chunk> chunk_ptr, 
   const ChunkID chunk_id,
-  const std::shared_ptr<std::vector<ChunkOffset>>& include_rows
+  const std::shared_ptr<std::vector<ChunkOffset>>& include_rows_ptr
 ) const {
-  // create reference segment with just the values from include_rows
-  // use include_rows to build up output segments and chunk
+  // create a chunk that consists of reference segments that point 
+  // only to the values that we want to include in the output table.
+  // The values that we want to include are given in include_rows_ptr.
+
+  // accumulate the new reference segments in this chunk
   auto out_chunk_ptr = std::make_shared<Chunk>();
+
+  // we convert each segment to a reference segment independently
   auto n_segments = chunk_ptr->column_count();
   for (auto col_id = ColumnID{0}; col_id < n_segments; ++col_id) {
     auto segment_ptr = chunk_ptr->get_segment(col_id);
     auto data_type = table_ptr->column_type(col_id);
     resolve_data_type(data_type, [&](auto type) {
       using Type = typename decltype(type)::type;
+
       // case 1: segment is value segment or dictionary segment
-      // -> point directly to it
+      // the new reference segment can point directly to the existing segment. We
+      // just need to create a new reference segments with the indexes of the 
+      // rows that we want to keep (i.e. the values in include_rows_ptr).
       const auto typed_value_segment_ptr = std::dynamic_pointer_cast<ValueSegment<Type>>(segment_ptr);
       const auto typed_dict_segment_ptr = std::dynamic_pointer_cast<DictionarySegment<Type>>(segment_ptr);
       if (typed_value_segment_ptr || typed_dict_segment_ptr) {
         auto pos_list = std::make_shared<PosList>();
-        for (const auto& pos : *include_rows) {
+        for (const auto& pos : *include_rows_ptr) {
           pos_list->emplace_back(RowID{chunk_id, pos});
         }
         auto new_segment = std::make_shared<ReferenceSegment>(table_ptr, col_id, pos_list);
         out_chunk_ptr->add_segment(new_segment);
         return;
       }
+
       // case 2: segment is reference segment
-      // -> we need to refer to the table that the reference segment refers
-      //    to in order to keep the number indirections low
+      // In this case we need to create a new reference segment that points to the table
+      // that the existing reference segment points to. This is needed to keep the number
+      // of indirections low. 
       const auto ref_segment_ptr = std::dynamic_pointer_cast<ReferenceSegment>(segment_ptr);
       if (ref_segment_ptr) {
-        auto pos_list = ref_segment_ptr->pos_list();
-        auto referenced_column_id = ref_segment_ptr->referenced_column_id();
         auto referenced_table = ref_segment_ptr->referenced_table();
+        auto referenced_column_id = ref_segment_ptr->referenced_column_id();
+        auto pos_list = ref_segment_ptr->pos_list();
         auto filtered_pos_list = std::make_shared<PosList>();
-        for (const auto& pos : *include_rows) {
+        for (const auto& pos : *include_rows_ptr) {
           filtered_pos_list->emplace_back((*pos_list)[pos]);
         }
         auto new_segment = std::make_shared<ReferenceSegment>(referenced_table, referenced_column_id, filtered_pos_list);
@@ -150,6 +175,7 @@ const std::shared_ptr<Chunk> TableScan::subset_chunk(
         return;
       }
 
+      // we do not support any segment types beyond value, dict, and reference segments
       throw std::runtime_error("unrecognized segment class at chunk id "+std::to_string(chunk_id)+" and column id "+std::to_string(_column_id));
     });
   }
@@ -159,14 +185,17 @@ const std::shared_ptr<Chunk> TableScan::subset_chunk(
 template<typename T>
 void TableScan::scan_segment(
   const std::shared_ptr<const ValueSegment<T>> segment_ptr,
-  std::shared_ptr<std::vector<ChunkOffset>> include_rows
+  std::shared_ptr<std::vector<ChunkOffset>> include_rows_ptr
 ) const {
+  // determine which values match the filter condition in a 
+  // value segment. The indexes of the rows that match the filter 
+  // condition are added directly to the vector in include_rows_ptr.
   auto values = segment_ptr->values();
   auto n_values = values.size();
   for (auto offset = ChunkOffset{0}; offset < n_values; ++offset) {
     auto value = values[offset];
     if (matches_search_value<T>(value)) {
-      include_rows->emplace_back(offset);
+      include_rows_ptr->emplace_back(offset);
     }
   }
 }
@@ -174,15 +203,22 @@ void TableScan::scan_segment(
 template<typename T>
 void TableScan::scan_segment(
   const std::shared_ptr<const DictionarySegment<T>> segment_ptr,
-  std::shared_ptr<std::vector<ChunkOffset>> include_rows
+  std::shared_ptr<std::vector<ChunkOffset>> include_rows_ptr
 ) const {
+  // determine which values match the filter condition in a 
+  // dictionary segment. The indexes of the rows that match the filter 
+  // condition are added directly to the vector in include_rows_ptr.
+  // The current implementation uses an unoptimized approach where
+  // we unpack each value in the dictionary segment and check the
+  // condition. We could improve performance by making use of the 
+  // ordered dictionary directly.
   auto dictionary = segment_ptr->dictionary();
   auto attribute_vector_ptr = segment_ptr->attribute_vector();
   auto n_values = attribute_vector_ptr->size();
   for (auto offset = ChunkOffset{0}; offset < n_values; ++offset) {
     auto value = dictionary[attribute_vector_ptr->get(offset)];
     if (matches_search_value<T>(value)) {
-      include_rows->emplace_back(offset);
+      include_rows_ptr->emplace_back(offset);
     }
   }
 }
@@ -190,37 +226,50 @@ void TableScan::scan_segment(
 template<typename T>
 void TableScan::scan_segment(
   const std::shared_ptr<const ReferenceSegment> segment_ptr,
-  std::shared_ptr<std::vector<ChunkOffset>> include_rows
+  std::shared_ptr<std::vector<ChunkOffset>> include_rows_ptr
 ) const {
+  // determine which values match the filter condition in a 
+  // reference segment. The indexes of the rows that match the filter 
+  // condition are added directly to the vector in include_rows_ptr.
+  // We cannot determine if a row matches the filter condition
+  // based just on the information in the reference segment. We 
+  // need to go to the table that the reference segment points to
+  // in order to retrieve the actual values and perform the filtering.
+  // We need to treat the reference segment differently based on whether
+  // it points to a value segment or a dictionary segment.
+
   auto referenced_table_ptr = segment_ptr->referenced_table();
   auto referenced_column_id = segment_ptr->referenced_column_id();
   auto pos_list_ptr = segment_ptr->pos_list();
   auto n_values = pos_list_ptr->size();
 
+  // iterate over all rows in the reference segment. Retrieve the
+  // segment that the reference segment points to and get the actual
+  // value from that segment.
   for (auto offset = ChunkOffset{0}; offset < n_values; ++offset) {
     auto row_id = (*pos_list_ptr)[offset];
     auto chunk_id = row_id.chunk_id;
     auto chunk_offset = row_id.chunk_offset;
     auto referenced_segment_ptr = referenced_table_ptr->get_chunk(chunk_id)->get_segment(referenced_column_id);
 
-    // handle case where referenced segment is ValueSegment
+    // referenced segment is ValueSegment
     const auto typed_value_segment_ptr = std::dynamic_pointer_cast<ValueSegment<T>>(referenced_segment_ptr);
     if (typed_value_segment_ptr) {
       auto value = (typed_value_segment_ptr->values())[chunk_offset];
       if (matches_search_value<T>(value)) {
-        include_rows->emplace_back(offset);
+        include_rows_ptr->emplace_back(offset);
       }
       continue;
     }
     
-    // handle case where referenced segment is DictionarySegment 
+    // referenced segment is DictionarySegment 
     const auto typed_dict_segment_ptr = std::dynamic_pointer_cast<DictionarySegment<T>>(referenced_segment_ptr);
     if (typed_dict_segment_ptr) {
       auto dictionary = typed_dict_segment_ptr->dictionary();
       auto attribute_vector_ptr = typed_dict_segment_ptr->attribute_vector();
       auto value = dictionary[attribute_vector_ptr->get(chunk_offset)];
       if (matches_search_value<T>(value)) {
-        include_rows->emplace_back(offset);
+        include_rows_ptr->emplace_back(offset);
       }
       continue;
     }
