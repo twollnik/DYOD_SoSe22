@@ -35,7 +35,7 @@ bool StorageManager::has_table(const std::string& name) const {
   return _tables.contains(name);
 }
 
-std::vector<std::string> StorageManager::table_names() const { 
+std::vector<std::string> StorageManager::table_names() const {
   auto table_names = std::vector<std::string>{};
   table_names.reserve(_tables.size());
   for (auto const& [table_name, _] : _tables) {

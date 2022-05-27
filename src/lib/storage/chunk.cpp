@@ -17,7 +17,7 @@
 
 namespace opossum {
 
-Chunk::Chunk(ColumnID n_columns) : _segments(std::vector<std::shared_ptr<AbstractSegment>>(n_columns)){};
+Chunk::Chunk(ColumnID n_columns) : _segments(std::vector<std::shared_ptr<AbstractSegment>>(n_columns)) {}
 
 void Chunk::add_segment(const std::shared_ptr<AbstractSegment> segment) { _segments.push_back(segment); }
 
