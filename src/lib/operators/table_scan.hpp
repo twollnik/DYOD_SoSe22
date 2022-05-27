@@ -30,23 +30,31 @@ class TableScan : public AbstractOperator {
  protected:
   std::shared_ptr<const Table> _on_execute() override;
 
-  template<typename T>
-  void scan_segment(
-    const std::shared_ptr<const ValueSegment<T>>& segment_ptr,
-    const std::shared_ptr<PosList> pos_list_ptr,
-    const ChunkID chunk_id);
+  const std::shared_ptr<std::vector<ChunkOffset>> scan_chunk(
+    const std::shared_ptr<const Chunk> chunk_ptr,
+    const ChunkID chunk_id,
+    const std::string data_type) const;
+
+  const std::shared_ptr<Chunk> subset_chunk(
+    const std::shared_ptr<const Table> table_ptr,
+    const std::shared_ptr<const Chunk> chunk_ptr,
+    const ChunkID chunk_id,
+    const std::shared_ptr<std::vector<ChunkOffset>>& include_rows) const;
 
   template<typename T>
   void scan_segment(
-    const std::shared_ptr<const DictionarySegment<T>>& segment_ptr,
-    const std::shared_ptr<PosList> pos_list_ptr,
-    const ChunkID chunk_id);
+    const std::shared_ptr<const ValueSegment<T>> segment_ptr,
+    const std::shared_ptr<std::vector<ChunkOffset>> include_rows) const;
 
   template<typename T>
   void scan_segment(
-    const std::shared_ptr<const ReferenceSegment>& segment_ptr,
-    const std::shared_ptr<PosList> pos_list_ptr,
-    const ChunkID chunk_id);
+    const std::shared_ptr<const DictionarySegment<T>> segment_ptr,
+    const std::shared_ptr<std::vector<ChunkOffset>> include_rows) const;
+
+  template<typename T>
+  void scan_segment(
+    const std::shared_ptr<const ReferenceSegment> segment_ptr,
+    const std::shared_ptr<std::vector<ChunkOffset>> include_rows) const;
 
   template<typename T>
   bool matches_search_value(T value) const;

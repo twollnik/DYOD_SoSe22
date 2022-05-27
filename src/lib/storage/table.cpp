@@ -23,6 +23,19 @@ Table::Table(const ChunkOffset target_chunk_size) : _target_chunk_size{target_ch
   create_new_chunk();
 }
 
+Table::Table(
+  const std::vector<std::shared_ptr<Chunk>> chunks, 
+  const std::shared_ptr<const Table> table_config,
+  const ChunkOffset target_chunk_size) : 
+    _target_chunk_size{target_chunk_size},
+    _chunks{chunks} {
+  auto n_cols = table_config->column_count();
+  for (auto col_id = ColumnID{0}; col_id < n_cols; ++col_id) {
+    _column_names.push_back(table_config->column_name(col_id));
+    _column_types.push_back(table_config->column_type(col_id));
+  }
+}
+
 void Table::add_column(const std::string& name, const std::string& type) {
   Assert(row_count()==0, "columns should only be added to empty tables. "+name+" is not empty");
   _column_names.push_back(name);
