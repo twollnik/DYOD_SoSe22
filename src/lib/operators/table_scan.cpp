@@ -49,19 +49,28 @@ std::shared_ptr<const Table> TableScan::_on_execute() {
     resolve_data_type(data_type, [&](auto type) {
      using Type = typename decltype(type)::type;
 
-     // try casting to value segment
+     // deal with value segments
      const auto typed_value_segment_ptr = std::dynamic_pointer_cast<ValueSegment<Type>>(segment_ptr);
      if (typed_value_segment_ptr) {
        scan_segment<Type>(typed_value_segment_ptr, pos_list_ptr, chunk_id);
        return;
      }
 
-     // try casting to dictionary segment
+     // deal with dictionary segments 
      const auto typed_dict_segment_ptr = std::dynamic_pointer_cast<DictionarySegment<Type>>(segment_ptr);
      if (typed_dict_segment_ptr) {
        scan_segment<Type>(typed_dict_segment_ptr, pos_list_ptr, chunk_id);
        return;
      }
+
+     // deal with reference segments 
+     const auto ref_segment_ptr = std::dynamic_pointer_cast<ReferenceSegment>(segment_ptr);
+     if (ref_segment_ptr) {
+       scan_segment<Type>(ref_segment_ptr, pos_list_ptr, chunk_id);
+       // TODO: update table pointer to referenced pointer for ref segmetns
+       return;
+     }
+
      throw std::runtime_error("unrecognized segment class at chunk id "+std::to_string(chunk_id)+" and column id "+std::to_string(_column_id));
     });
   }
@@ -112,6 +121,27 @@ void TableScan::scan_segment(
       pos_list_ptr->emplace_back(RowID{chunk_id, offset});
     }
   }
+}
+
+template<typename T>
+void TableScan::scan_segment(
+  const std::shared_ptr<const ReferenceSegment>& segment_ptr,
+  const std::shared_ptr<PosList> pos_list_ptr,
+  const ChunkID chunk_id
+) {
+  auto referenced_table_ptr = segment_ptr->referenced_table();
+  auto referenced_column_id = segment_ptr->referenced_column_id();
+  auto pos_list_ptr = segment_ptr->pos_list();
+  auto n_values = pos_list_ptr->size();
+  for (auto offset = ChunkOffset{0}; offset < n_values; ++offset) {
+    auto row_id = (*pos_list_ptr)[offset];
+    auto segment_ptr = referenced_table_ptr->get_chunk(row_id.chunk_id)->get_segment(referenced_column_id)
+
+    // TODO: handle case where referenced segment is ValueSegment
+    const auto typed_dict_segment_ptr = std::dynamic_pointer_cast<DictionarySegment<Type>>(segment_ptr);
+    
+    // TODO: handle case where referenced segment is DictionarySegment 
+    const auto typed_dict_segment_ptr = std::dynamic_pointer_cast<DictionarySegment<Type>>(segment_ptr);
 
 }
 
