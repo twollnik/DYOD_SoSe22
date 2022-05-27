@@ -97,20 +97,20 @@ const std::shared_ptr<std::vector<ChunkOffset>> TableScan::scan_chunk(
     // case 1: segment is value segment
     const auto typed_value_segment_ptr = std::dynamic_pointer_cast<ValueSegment<Type>>(segment_ptr);
     if (typed_value_segment_ptr) {
-      scan_segment<Type>(typed_value_segment_ptr, include_rows_ptr);
-      return include_rows_ptr;
+      include_rows_ptr = scan_segment<Type>(typed_value_segment_ptr);
+      return;
     }
     // case 2: segment is dictionary segment
     const auto typed_dict_segment_ptr = std::dynamic_pointer_cast<DictionarySegment<Type>>(segment_ptr);
     if (typed_dict_segment_ptr) {
-      scan_segment<Type>(typed_dict_segment_ptr, include_rows_ptr);
-      return include_rows_ptr;
+      include_rows_ptr = scan_segment<Type>(typed_dict_segment_ptr);
+      return;
     }
     // case 3: segment is reference segment
     const auto ref_segment_ptr = std::dynamic_pointer_cast<ReferenceSegment>(segment_ptr);
     if (ref_segment_ptr) {
-      scan_segment<Type>(ref_segment_ptr, include_rows_ptr);
-      return include_rows_ptr;
+      include_rows_ptr = scan_segment<Type>(ref_segment_ptr);
+      return;
     }
 
     // we do not support any segment types beyond value, dict, and reference segments
@@ -183,13 +183,12 @@ const std::shared_ptr<Chunk> TableScan::subset_chunk(
 }
 
 template<typename T>
-void TableScan::scan_segment(
-  const std::shared_ptr<const ValueSegment<T>> segment_ptr,
-  std::shared_ptr<std::vector<ChunkOffset>> include_rows_ptr
+std::shared_ptr<std::vector<ChunkOffset>> TableScan::scan_segment(
+  const std::shared_ptr<const ValueSegment<T>> segment_ptr
 ) const {
   // determine which values match the filter condition in a 
-  // value segment. The indexes of the rows that match the filter 
-  // condition are added directly to the vector in include_rows_ptr.
+  // value segment.
+  auto include_rows_ptr = std::make_shared<std::vector<ChunkOffset>>();
   auto values = segment_ptr->values();
   auto n_values = values.size();
   for (auto offset = ChunkOffset{0}; offset < n_values; ++offset) {
@@ -198,20 +197,20 @@ void TableScan::scan_segment(
       include_rows_ptr->emplace_back(offset);
     }
   }
+  return include_rows_ptr;
 }
 
 template<typename T>
-void TableScan::scan_segment(
-  const std::shared_ptr<const DictionarySegment<T>> segment_ptr,
-  std::shared_ptr<std::vector<ChunkOffset>> include_rows_ptr
+std::shared_ptr<std::vector<ChunkOffset>> TableScan::scan_segment(
+  const std::shared_ptr<const DictionarySegment<T>> segment_ptr
 ) const {
   // determine which values match the filter condition in a 
-  // dictionary segment. The indexes of the rows that match the filter 
-  // condition are added directly to the vector in include_rows_ptr.
+  // dictionary segment. 
   // The current implementation uses an unoptimized approach where
   // we unpack each value in the dictionary segment and check the
   // condition. We could improve performance by making use of the 
   // ordered dictionary directly.
+  auto include_rows_ptr = std::make_shared<std::vector<ChunkOffset>>();
   auto dictionary = segment_ptr->dictionary();
   auto attribute_vector_ptr = segment_ptr->attribute_vector();
   auto n_values = attribute_vector_ptr->size();
@@ -221,16 +220,15 @@ void TableScan::scan_segment(
       include_rows_ptr->emplace_back(offset);
     }
   }
+  return include_rows_ptr;
 }
 
 template<typename T>
-void TableScan::scan_segment(
-  const std::shared_ptr<const ReferenceSegment> segment_ptr,
-  std::shared_ptr<std::vector<ChunkOffset>> include_rows_ptr
+std::shared_ptr<std::vector<ChunkOffset>> TableScan::scan_segment(
+  const std::shared_ptr<const ReferenceSegment> segment_ptr
 ) const {
   // determine which values match the filter condition in a 
-  // reference segment. The indexes of the rows that match the filter 
-  // condition are added directly to the vector in include_rows_ptr.
+  // reference segment.
   // We cannot determine if a row matches the filter condition
   // based just on the information in the reference segment. We 
   // need to go to the table that the reference segment points to
@@ -238,6 +236,7 @@ void TableScan::scan_segment(
   // We need to treat the reference segment differently based on whether
   // it points to a value segment or a dictionary segment.
 
+  auto include_rows_ptr = std::make_shared<std::vector<ChunkOffset>>();
   auto referenced_table_ptr = segment_ptr->referenced_table();
   auto referenced_column_id = segment_ptr->referenced_column_id();
   auto pos_list_ptr = segment_ptr->pos_list();
@@ -277,6 +276,8 @@ void TableScan::scan_segment(
     // reference segments can only refer to value segments or dict segments
     throw std::runtime_error("reference segment refers to invalid segment type");
   }
+
+  return include_rows_ptr;
 }
 
 template<typename T>

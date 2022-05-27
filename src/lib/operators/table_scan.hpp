@@ -42,19 +42,16 @@ class TableScan : public AbstractOperator {
     const std::shared_ptr<std::vector<ChunkOffset>>& include_rows) const;
 
   template<typename T>
-  void scan_segment(
-    const std::shared_ptr<const ValueSegment<T>> segment_ptr,
-    const std::shared_ptr<std::vector<ChunkOffset>> include_rows) const;
+  std::shared_ptr<std::vector<ChunkOffset>> scan_segment(
+    const std::shared_ptr<const ValueSegment<T>> segment_ptr) const;
 
   template<typename T>
-  void scan_segment(
-    const std::shared_ptr<const DictionarySegment<T>> segment_ptr,
-    const std::shared_ptr<std::vector<ChunkOffset>> include_rows) const;
+  std::shared_ptr<std::vector<ChunkOffset>> scan_segment(
+    const std::shared_ptr<const DictionarySegment<T>> segment_ptr) const;
 
   template<typename T>
-  void scan_segment(
-    const std::shared_ptr<const ReferenceSegment> segment_ptr,
-    const std::shared_ptr<std::vector<ChunkOffset>> include_rows) const;
+  std::shared_ptr<std::vector<ChunkOffset>> scan_segment(
+    const std::shared_ptr<const ReferenceSegment> segment_ptr) const;
 
   template<typename T>
   bool matches_search_value(T value) const;
