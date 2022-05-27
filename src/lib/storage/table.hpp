@@ -27,10 +27,8 @@ class Table : private Noncopyable {
   explicit Table(const ChunkOffset target_chunk_size = std::numeric_limits<ChunkOffset>::max() - 1);
 
   // Creates a table, initializes the chunk container, and copies the column names and types from a different table.
-  explicit Table(
-    const std::vector<std::shared_ptr<Chunk>> chunks, 
-    const std::shared_ptr<const Table> table_config,
-    const ChunkOffset target_chunk_size = std::numeric_limits<ChunkOffset>::max() - 1);
+  explicit Table(const std::vector<std::shared_ptr<Chunk>> chunks, const std::shared_ptr<const Table> table_config,
+                 const ChunkOffset target_chunk_size = std::numeric_limits<ChunkOffset>::max() - 1);
 
   // Returns the number of columns (cannot exceed ColumnID (uint16_t)).
   ColumnCount column_count() const;

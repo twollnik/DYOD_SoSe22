@@ -1,13 +1,13 @@
 #include "fixed_width_integer_vector.hpp"
 
-#include "utils/assert.hpp"
 #include "types.hpp"
+#include "utils/assert.hpp"
 
 namespace opossum {
 
 template <typename uintX_t>
-FixedWidthIntegerVector<uintX_t>::FixedWidthIntegerVector(const size_t capacity) 
-  : _vector{std::vector<uintX_t>(capacity)} {};
+FixedWidthIntegerVector<uintX_t>::FixedWidthIntegerVector(const size_t capacity)
+    : _vector{std::vector<uintX_t>(capacity)} {};
 
 template <typename uintX_t>
 ValueID FixedWidthIntegerVector<uintX_t>::get(const size_t index) const {
@@ -16,7 +16,8 @@ ValueID FixedWidthIntegerVector<uintX_t>::get(const size_t index) const {
 
 template <typename uintX_t>
 void FixedWidthIntegerVector<uintX_t>::set(const size_t index, const ValueID value_id) {
-  DebugAssert(index < size(), "index "+std::to_string(index)+" out of bounds for FixedWidthIntegerVector with size "+std::to_string(size()));
+  DebugAssert(index < size(), "index " + std::to_string(index) +
+                                  " out of bounds for FixedWidthIntegerVector with size " + std::to_string(size()));
   _vector[index] = static_cast<uintX_t>(value_id);
 }
 

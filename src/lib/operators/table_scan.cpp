@@ -5,45 +5,35 @@
 
 #include "abstract_operator.hpp"
 #include "all_type_variant.hpp"
-#include "table_scan.hpp"
-#include "types.hpp"
-#include "type_cast.hpp"
 #include "resolve_type.hpp"
-#include "utils/assert.hpp"
 #include "storage/dictionary_segment.hpp"
 #include "storage/reference_segment.hpp"
 #include "storage/value_segment.hpp"
+#include "table_scan.hpp"
+#include "type_cast.hpp"
+#include "types.hpp"
+#include "utils/assert.hpp"
 
 namespace opossum {
 
-TableScan::TableScan(
-  const std::shared_ptr<const AbstractOperator>& in, 
-  const ColumnID column_id, 
-  const ScanType scan_type,
-  const AllTypeVariant search_value) :
-    _in{in}, _column_id{column_id}, _scan_type{scan_type}, _search_value{search_value} {}
+TableScan::TableScan(const std::shared_ptr<const AbstractOperator>& in, const ColumnID column_id,
+                     const ScanType scan_type, const AllTypeVariant search_value)
+    : _in{in}, _column_id{column_id}, _scan_type{scan_type}, _search_value{search_value} {}
 
-ColumnID TableScan::column_id() const {
-  return _column_id;
-}
+ColumnID TableScan::column_id() const { return _column_id; }
 
-ScanType TableScan::scan_type() const {
-  return _scan_type;
-}
+ScanType TableScan::scan_type() const { return _scan_type; }
 
-const AllTypeVariant& TableScan::search_value() const {
-  return _search_value;
-}
+const AllTypeVariant& TableScan::search_value() const { return _search_value; }
 
 std::shared_ptr<const Table> TableScan::_on_execute() {
-
   auto in_table_ptr = _in->get_output();
   auto n_columns = in_table_ptr->column_count();
   auto n_chunks = in_table_ptr->chunk_count();
   auto data_type = in_table_ptr->column_type(_column_id);
 
   // accumulate the scan results here. We will have one chunk
-  // for each chunk in the input table (that has at least one 
+  // for each chunk in the input table (that has at least one
   // row matching the filter).
   auto result_chunks_ptr = std::make_shared<std::vector<std::shared_ptr<Chunk>>>();
 
@@ -60,12 +50,12 @@ std::shared_ptr<const Table> TableScan::_on_execute() {
     }
   }
 
-  // build the output table. There are two cases: 
+  // build the output table. There are two cases:
   // (1) if the result set is empty (i.e. no rows match
   // the filter condition) we create an empty table. The empty table
   // has the same column definitions (i.e. column names and types) as the input table.
   // (2) if there are rows in the result set we create a new table with the
-  // chunks that we have already constructed. We copy the column configuration 
+  // chunks that we have already constructed. We copy the column configuration
   // from the input table by using Table's specialized constructor.
   if (result_chunks_ptr->empty()) {
     auto out_table_ptr = std::make_shared<Table>();
@@ -78,11 +68,9 @@ std::shared_ptr<const Table> TableScan::_on_execute() {
   }
 }
 
-const std::shared_ptr<std::vector<ChunkOffset>> TableScan::scan_chunk(
-  const std::shared_ptr<const Chunk> chunk_ptr, 
-  const ChunkID chunk_id,
-  const std::string data_type
-) const {
+const std::shared_ptr<std::vector<ChunkOffset>> TableScan::scan_chunk(const std::shared_ptr<const Chunk> chunk_ptr,
+                                                                      const ChunkID chunk_id,
+                                                                      const std::string data_type) const {
   // determine the set of rows that should be included in the scan output,
   // i.e. find the row indexes that match the filter condition.
 
@@ -114,19 +102,17 @@ const std::shared_ptr<std::vector<ChunkOffset>> TableScan::scan_chunk(
     }
 
     // we do not support any segment types beyond value, dict, and reference segments
-    throw std::runtime_error("unrecognized segment class at chunk id "+std::to_string(chunk_id)+" and column id "+std::to_string(_column_id));
+    throw std::runtime_error("unrecognized segment class at chunk id " + std::to_string(chunk_id) + " and column id " +
+                             std::to_string(_column_id));
   });
 
   return include_rows_ptr;
 }
 
 const std::shared_ptr<Chunk> TableScan::subset_chunk(
-  const std::shared_ptr<const Table> table_ptr,
-  const std::shared_ptr<const Chunk> chunk_ptr, 
-  const ChunkID chunk_id,
-  const std::shared_ptr<std::vector<ChunkOffset>>& include_rows_ptr
-) const {
-  // create a chunk that consists of reference segments that point 
+    const std::shared_ptr<const Table> table_ptr, const std::shared_ptr<const Chunk> chunk_ptr, const ChunkID chunk_id,
+    const std::shared_ptr<std::vector<ChunkOffset>>& include_rows_ptr) const {
+  // create a chunk that consists of reference segments that point
   // only to the values that we want to include in the output table.
   // The values that we want to include are given in include_rows_ptr.
 
@@ -143,7 +129,7 @@ const std::shared_ptr<Chunk> TableScan::subset_chunk(
 
       // case 1: segment is value segment or dictionary segment
       // the new reference segment can point directly to the existing segment. We
-      // just need to create a new reference segments with the indexes of the 
+      // just need to create a new reference segments with the indexes of the
       // rows that we want to keep (i.e. the values in include_rows_ptr).
       const auto typed_value_segment_ptr = std::dynamic_pointer_cast<ValueSegment<Type>>(segment_ptr);
       const auto typed_dict_segment_ptr = std::dynamic_pointer_cast<DictionarySegment<Type>>(segment_ptr);
@@ -160,7 +146,7 @@ const std::shared_ptr<Chunk> TableScan::subset_chunk(
       // case 2: segment is reference segment
       // In this case we need to create a new reference segment that points to the table
       // that the existing reference segment points to. This is needed to keep the number
-      // of indirections low. 
+      // of indirections low.
       const auto ref_segment_ptr = std::dynamic_pointer_cast<ReferenceSegment>(segment_ptr);
       if (ref_segment_ptr) {
         auto referenced_table = ref_segment_ptr->referenced_table();
@@ -170,23 +156,24 @@ const std::shared_ptr<Chunk> TableScan::subset_chunk(
         for (const auto& pos : *include_rows_ptr) {
           filtered_pos_list->emplace_back((*pos_list)[pos]);
         }
-        auto new_segment = std::make_shared<ReferenceSegment>(referenced_table, referenced_column_id, filtered_pos_list);
+        auto new_segment =
+            std::make_shared<ReferenceSegment>(referenced_table, referenced_column_id, filtered_pos_list);
         out_chunk_ptr->add_segment(new_segment);
         return;
       }
 
       // we do not support any segment types beyond value, dict, and reference segments
-      throw std::runtime_error("unrecognized segment class at chunk id "+std::to_string(chunk_id)+" and column id "+std::to_string(_column_id));
+      throw std::runtime_error("unrecognized segment class at chunk id " + std::to_string(chunk_id) +
+                               " and column id " + std::to_string(_column_id));
     });
   }
   return out_chunk_ptr;
 }
 
-template<typename T>
+template <typename T>
 std::shared_ptr<std::vector<ChunkOffset>> TableScan::scan_segment(
-  const std::shared_ptr<const ValueSegment<T>> segment_ptr
-) const {
-  // determine which values match the filter condition in a 
+    const std::shared_ptr<const ValueSegment<T>> segment_ptr) const {
+  // determine which values match the filter condition in a
   // value segment.
   auto include_rows_ptr = std::make_shared<std::vector<ChunkOffset>>();
   auto values = segment_ptr->values();
@@ -200,15 +187,14 @@ std::shared_ptr<std::vector<ChunkOffset>> TableScan::scan_segment(
   return include_rows_ptr;
 }
 
-template<typename T>
+template <typename T>
 std::shared_ptr<std::vector<ChunkOffset>> TableScan::scan_segment(
-  const std::shared_ptr<const DictionarySegment<T>> segment_ptr
-) const {
-  // determine which values match the filter condition in a 
-  // dictionary segment. 
+    const std::shared_ptr<const DictionarySegment<T>> segment_ptr) const {
+  // determine which values match the filter condition in a
+  // dictionary segment.
   // The current implementation uses an unoptimized approach where
   // we unpack each value in the dictionary segment and check the
-  // condition. We could improve performance by making use of the 
+  // condition. We could improve performance by making use of the
   // ordered dictionary directly.
   auto include_rows_ptr = std::make_shared<std::vector<ChunkOffset>>();
   auto dictionary = segment_ptr->dictionary();
@@ -223,14 +209,13 @@ std::shared_ptr<std::vector<ChunkOffset>> TableScan::scan_segment(
   return include_rows_ptr;
 }
 
-template<typename T>
+template <typename T>
 std::shared_ptr<std::vector<ChunkOffset>> TableScan::scan_segment(
-  const std::shared_ptr<const ReferenceSegment> segment_ptr
-) const {
-  // determine which values match the filter condition in a 
+    const std::shared_ptr<const ReferenceSegment> segment_ptr) const {
+  // determine which values match the filter condition in a
   // reference segment.
   // We cannot determine if a row matches the filter condition
-  // based just on the information in the reference segment. We 
+  // based just on the information in the reference segment. We
   // need to go to the table that the reference segment points to
   // in order to retrieve the actual values and perform the filtering.
   // We need to treat the reference segment differently based on whether
@@ -260,8 +245,8 @@ std::shared_ptr<std::vector<ChunkOffset>> TableScan::scan_segment(
       }
       continue;
     }
-    
-    // referenced segment is DictionarySegment 
+
+    // referenced segment is DictionarySegment
     const auto typed_dict_segment_ptr = std::dynamic_pointer_cast<DictionarySegment<T>>(referenced_segment_ptr);
     if (typed_dict_segment_ptr) {
       auto dictionary = typed_dict_segment_ptr->dictionary();
@@ -280,7 +265,7 @@ std::shared_ptr<std::vector<ChunkOffset>> TableScan::scan_segment(
   return include_rows_ptr;
 }
 
-template<typename T>
+template <typename T>
 bool TableScan::matches_search_value(T value) const {
   auto search_value = type_cast<T>(_search_value);
   switch (_scan_type) {

@@ -8,8 +8,8 @@
 #include "gtest/gtest.h"
 
 #include "../lib/resolve_type.hpp"
-#include "../lib/storage/table.hpp"
 #include "../lib/storage/dictionary_segment.hpp"
+#include "../lib/storage/table.hpp"
 
 namespace opossum {
 
@@ -50,7 +50,7 @@ TEST_F(StorageTableTest, RowCount) {
   table.append({6, "world"});
   table.append({3, "!"});
   EXPECT_EQ(table.row_count(), 3u);
-  
+
   // should still work with chunks of unequal size
   table.create_new_chunk();
   table.create_new_chunk();
@@ -78,8 +78,7 @@ TEST_F(StorageTableTest, GetColumnIdByName) {
 
 TEST_F(StorageTableTest, GetChunkSize) { EXPECT_EQ(table.target_chunk_size(), 2u); }
 
-TEST_F(StorageTableTest, CompressChunk) { 
-
+TEST_F(StorageTableTest, CompressChunk) {
   table.append({4, "Hello"});
   table.append({6, "Hello"});
   table.append({3, "!"});
@@ -94,7 +93,7 @@ TEST_F(StorageTableTest, CompressChunk) {
 
   EXPECT_EQ(encoded_chunk->size(), 2u);
   EXPECT_EQ(encoded_chunk->column_count(), 2u);
-  EXPECT_EQ(dict_seg_0.dictionary(), (std::vector<int>{4,6}));
+  EXPECT_EQ(dict_seg_0.dictionary(), (std::vector<int>{4, 6}));
   EXPECT_EQ(dict_seg_1.dictionary(), (std::vector<std::string>{"Hello"}));
   EXPECT_EQ(att_vec_0->get(0), 0);
   EXPECT_EQ(att_vec_0->get(1), 1);

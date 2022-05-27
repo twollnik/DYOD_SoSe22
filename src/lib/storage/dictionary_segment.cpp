@@ -1,18 +1,17 @@
+#include <limits>
 #include <set>
 #include <unordered_map>
-#include <limits>
 
 #include "dictionary_segment.hpp"
 #include "fixed_width_integer_vector.hpp"
-#include "utils/assert.hpp"
-#include "types.hpp"
 #include "type_cast.hpp"
+#include "types.hpp"
+#include "utils/assert.hpp"
 
 namespace opossum {
 
 template <typename T>
 DictionarySegment<T>::DictionarySegment(const std::shared_ptr<AbstractSegment>& abstract_segment) {
-
   // determine unique values and store in sorted set
   auto dict_values = std::set<T>{};
   auto segment_size = abstract_segment->size();

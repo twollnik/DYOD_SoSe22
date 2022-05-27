@@ -6,9 +6,9 @@
 #include <utility>
 #include <vector>
 
+#include "abstract_attribute_vector.hpp"
 #include "abstract_segment.hpp"
 #include "all_type_variant.hpp"
-#include "abstract_attribute_vector.hpp"
 #include "types.hpp"
 
 namespace opossum {

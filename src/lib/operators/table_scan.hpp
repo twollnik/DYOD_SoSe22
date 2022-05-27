@@ -7,11 +7,11 @@
 
 #include "abstract_operator.hpp"
 #include "all_type_variant.hpp"
-#include "types.hpp"
-#include "utils/assert.hpp"
 #include "storage/dictionary_segment.hpp"
 #include "storage/reference_segment.hpp"
 #include "storage/value_segment.hpp"
+#include "types.hpp"
+#include "utils/assert.hpp"
 
 namespace opossum {
 
@@ -30,30 +30,26 @@ class TableScan : public AbstractOperator {
  protected:
   std::shared_ptr<const Table> _on_execute() override;
 
-  const std::shared_ptr<std::vector<ChunkOffset>> scan_chunk(
-    const std::shared_ptr<const Chunk> chunk_ptr,
-    const ChunkID chunk_id,
-    const std::string data_type) const;
+  const std::shared_ptr<std::vector<ChunkOffset>> scan_chunk(const std::shared_ptr<const Chunk> chunk_ptr,
+                                                             const ChunkID chunk_id, const std::string data_type) const;
 
-  const std::shared_ptr<Chunk> subset_chunk(
-    const std::shared_ptr<const Table> table_ptr,
-    const std::shared_ptr<const Chunk> chunk_ptr,
-    const ChunkID chunk_id,
-    const std::shared_ptr<std::vector<ChunkOffset>>& include_rows) const;
+  const std::shared_ptr<Chunk> subset_chunk(const std::shared_ptr<const Table> table_ptr,
+                                            const std::shared_ptr<const Chunk> chunk_ptr, const ChunkID chunk_id,
+                                            const std::shared_ptr<std::vector<ChunkOffset>>& include_rows) const;
 
-  template<typename T>
+  template <typename T>
   std::shared_ptr<std::vector<ChunkOffset>> scan_segment(
-    const std::shared_ptr<const ValueSegment<T>> segment_ptr) const;
+      const std::shared_ptr<const ValueSegment<T>> segment_ptr) const;
 
-  template<typename T>
+  template <typename T>
   std::shared_ptr<std::vector<ChunkOffset>> scan_segment(
-    const std::shared_ptr<const DictionarySegment<T>> segment_ptr) const;
+      const std::shared_ptr<const DictionarySegment<T>> segment_ptr) const;
 
-  template<typename T>
+  template <typename T>
   std::shared_ptr<std::vector<ChunkOffset>> scan_segment(
-    const std::shared_ptr<const ReferenceSegment> segment_ptr) const;
+      const std::shared_ptr<const ReferenceSegment> segment_ptr) const;
 
-  template<typename T>
+  template <typename T>
   bool matches_search_value(T value) const;
 
   std::shared_ptr<const AbstractOperator> _in;
