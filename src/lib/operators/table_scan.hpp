@@ -9,6 +9,8 @@
 #include "all_type_variant.hpp"
 #include "types.hpp"
 #include "utils/assert.hpp"
+#include "storage/value_segment.hpp"
+#include "storage/dictionary_segment.hpp"
 
 namespace opossum {
 
@@ -26,6 +28,21 @@ class TableScan : public AbstractOperator {
 
  protected:
   std::shared_ptr<const Table> _on_execute() override;
+
+  template<typename T>
+  void scan_segment(
+    const std::shared_ptr<const ValueSegment<T>>& segment_ptr,
+    const std::shared_ptr<PosList> pos_list_ptr,
+    const ChunkID chunk_id);
+
+  template<typename T>
+  void scan_segment(
+    const std::shared_ptr<const DictionarySegment<T>>& segment_ptr,
+    const std::shared_ptr<PosList> pos_list_ptr,
+    const ChunkID chunk_id);
+
+  template<typename T>
+  bool matches_search_value(T value) const;
 
   std::shared_ptr<const AbstractOperator> _in;
   ColumnID _column_id;
