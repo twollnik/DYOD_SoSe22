@@ -43,3 +43,5 @@ default.profraw
 *.swp
 *.swo
 *.swn
+
+cmake-build-debug/
