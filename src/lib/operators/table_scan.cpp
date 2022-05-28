@@ -28,7 +28,6 @@ const AllTypeVariant& TableScan::search_value() const { return _search_value; }
 
 std::shared_ptr<const Table> TableScan::_on_execute() {
   auto in_table_ptr = _in->get_output();
-  auto n_columns = in_table_ptr->column_count();
   auto n_chunks = in_table_ptr->chunk_count();
   auto data_type = in_table_ptr->column_type(_column_id);
 
@@ -55,14 +54,12 @@ std::shared_ptr<const Table> TableScan::_on_execute() {
   // the filter condition) we create an empty table. The empty table
   // has the same column definitions (i.e. column names and types) as the input table.
   // (2) if there are rows in the result set we create a new table with the
-  // chunks that we have already constructed. We copy the column configuration
-  // from the input table by using Table's specialized constructor.
+  // chunks that we have already constructed and keeping the input table's column
+  // defintions. 
+  // We copy the column definitions from the input table by 
+  // using Table's specialized constructors.
   if (result_chunks_ptr->empty()) {
-    auto out_table_ptr = std::make_shared<Table>();
-    for (auto col_id = ColumnID{0}; col_id < n_columns; ++col_id) {
-      out_table_ptr->add_column(in_table_ptr->column_name(col_id), in_table_ptr->column_type(col_id));
-    }
-    return out_table_ptr;
+    return std::make_shared<Table>(in_table_ptr);
   } else {
     return std::make_shared<Table>(*result_chunks_ptr, in_table_ptr);
   }
@@ -74,8 +71,11 @@ const std::shared_ptr<std::vector<ChunkOffset>> TableScan::scan_chunk(const std:
   // determine the set of rows that should be included in the scan output,
   // i.e. find the row indexes that match the filter condition.
 
-  // accumulate the indexes of the rows that should be included in the output here
-  auto include_rows_ptr = std::make_shared<std::vector<ChunkOffset>>();
+  // accumulate the indexes of the rows that should be included in the output in include_rows_ptr.
+  // The container is initialized later on when we perform the actual filtering.
+  // This declaration is needed so that we can pass the object outside of the
+  // scope of the lambda below.
+  std::shared_ptr<std::vector<ChunkOffset>> include_rows_ptr;
 
   // get segment that we want to filter on and cast it to the right type. Then,
   // perform a scan on the segment based on the segment type (value/dict/reference).
@@ -106,6 +106,7 @@ const std::shared_ptr<std::vector<ChunkOffset>> TableScan::scan_chunk(const std:
                              std::to_string(_column_id));
   });
 
+  include_rows_ptr->shrink_to_fit();
   return include_rows_ptr;
 }
 
@@ -116,7 +117,7 @@ const std::shared_ptr<Chunk> TableScan::subset_chunk(
   // only to the values that we want to include in the output table.
   // The values that we want to include are given in include_rows_ptr.
 
-  // accumulate the new reference segments in this chunk
+  // accumulate the new reference segments in this chunk.
   auto out_chunk_ptr = std::make_shared<Chunk>();
 
   // we convert each segment to a reference segment independently

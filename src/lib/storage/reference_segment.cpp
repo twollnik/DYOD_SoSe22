@@ -22,7 +22,7 @@ ReferenceSegment::ReferenceSegment(const std::shared_ptr<const Table>& reference
 AllTypeVariant ReferenceSegment::operator[](const ChunkOffset chunk_offset) const {
   DebugAssert(chunk_offset < size(), "invalid chunk offset " + std::to_string(chunk_offset) +
                                          " for reference segment with " + std::to_string(size()) + " rows");
-  auto row_id = _pos->at(chunk_offset);
+  auto& row_id = (*_pos)[chunk_offset];
   auto segment = _referenced_table->get_chunk(row_id.chunk_id)->get_segment(_referenced_column_id);
   return (*segment)[row_id.chunk_offset];
 }
