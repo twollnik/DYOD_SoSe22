@@ -32,7 +32,7 @@ class Chunk : private Noncopyable {
   void add_segment(const std::shared_ptr<AbstractSegment> segment);
 
   // Exchanges a segment at the specified index
-  void add_segment_at(const std::shared_ptr<AbstractSegment> segment, const ColumnID position);
+  void insert_segment_at(const std::shared_ptr<AbstractSegment> segment, const ColumnID position);
 
   // Instantiates and adds a ValueSegment for the given type
   void create_and_add_segment(const std::string& type);

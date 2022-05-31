@@ -70,7 +70,7 @@ TEST_F(StorageDictionarySegmentTest, LowerUpperBound) {
   EXPECT_EQ(dict_segment->upper_bound(15), INVALID_VALUE_ID);
 }
 
-TEST_F(StorageDictionarySegmentTest, AccessingElements) {
+TEST_F(StorageDictionarySegmentTest, AccessingElementsViaOperator) {
   value_segment_int->append(1);
   value_segment_int->append(2);
 
@@ -84,6 +84,18 @@ TEST_F(StorageDictionarySegmentTest, AccessingElements) {
   // test [] operator
   EXPECT_EQ((*dict_segment)[ChunkOffset{0}], AllTypeVariant{1});
   EXPECT_EQ((*dict_segment)[ChunkOffset{1}], AllTypeVariant{2});
+}
+
+TEST_F(StorageDictionarySegmentTest, AccessingElementsViaGet) {
+  value_segment_int->append(1);
+  value_segment_int->append(2);
+
+  std::shared_ptr<AbstractSegment> segment;
+  resolve_data_type("int", [&](auto type) {
+    using Type = typename decltype(type)::type;
+    segment = std::make_shared<DictionarySegment<Type>>(value_segment_int);
+  });
+  auto dict_segment = std::dynamic_pointer_cast<DictionarySegment<int32_t>>(segment);
 
   // test get function
   EXPECT_EQ(dict_segment->get(ChunkOffset{0}), 1);
@@ -190,7 +202,6 @@ TEST_F(StorageDictionarySegmentTest, UInt32) {
   auto dict_col = std::dynamic_pointer_cast<opossum::DictionarySegment<int32_t>>(column);
 
   EXPECT_EQ(dict_col->estimate_memory_usage(), 65536 * sizeof(int32_t) + 65536 * sizeof(int32_t));
-  EXPECT_THROW(dict_col->append(0), std::exception);
 }
 
 }  // namespace opossum

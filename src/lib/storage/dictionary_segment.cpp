@@ -42,7 +42,7 @@ DictionarySegment<T>::DictionarySegment(const std::shared_ptr<AbstractSegment>& 
   }
 
   // apply dictionary encoding to input segment
-  for (ChunkOffset value_index = 0; value_index < segment_size; ++value_index) {
+  for (auto value_index = ChunkOffset{0}; value_index < segment_size; ++value_index) {
     auto cur_value = type_cast<T>((*abstract_segment)[value_index]);
     _attribute_vector->set(value_index, dict_indexes[cur_value]);
   }
@@ -69,7 +69,7 @@ const std::vector<T>& DictionarySegment<T>::dictionary() const {
 }
 
 template <typename T>
-std::shared_ptr<AbstractAttributeVector> DictionarySegment<T>::attribute_vector() const {
+std::shared_ptr<const AbstractAttributeVector> DictionarySegment<T>::attribute_vector() const {
   return _attribute_vector;
 }
 

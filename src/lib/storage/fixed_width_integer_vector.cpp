@@ -31,6 +31,7 @@ AttributeVectorWidth FixedWidthIntegerVector<uintX_t>::width() const {
   return static_cast<AttributeVectorWidth>(sizeof(uintX_t));
 }
 
+
 template class FixedWidthIntegerVector<uint8_t>;
 template class FixedWidthIntegerVector<uint16_t>;
 template class FixedWidthIntegerVector<uint32_t>;

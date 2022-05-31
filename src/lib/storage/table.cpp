@@ -109,7 +109,7 @@ void Table::compress_chunk(const ChunkID chunk_id) {
     resolve_data_type(type, [&](const auto data_type_t) {
       using ColumnDataType = typename decltype(data_type_t)::type;
       const auto dictionary_segment = std::make_shared<DictionarySegment<ColumnDataType>>(segment);
-      new_chunk->add_segment_at(dictionary_segment, column_id);
+      new_chunk->insert_segment_at(dictionary_segment, column_id);
     });
   };
 
