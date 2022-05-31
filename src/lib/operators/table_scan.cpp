@@ -55,8 +55,8 @@ std::shared_ptr<const Table> TableScan::_on_execute() {
   // has the same column definitions (i.e. column names and types) as the input table.
   // (2) if there are rows in the result set we create a new table with the
   // chunks that we have already constructed and keeping the input table's column
-  // defintions. 
-  // We copy the column definitions from the input table by 
+  // defintions.
+  // We copy the column definitions from the input table by
   // using Table's specialized constructors.
   if (result_chunks_ptr->empty()) {
     return std::make_shared<Table>(in_table_ptr);

@@ -21,8 +21,7 @@ namespace opossum {
 
 Table::Table(const ChunkOffset target_chunk_size) : _target_chunk_size{target_chunk_size} { create_new_chunk(); }
 
-Table::Table(const std::shared_ptr<const Table> table_config,
-             const ChunkOffset target_chunk_size)
+Table::Table(const std::shared_ptr<const Table> table_config, const ChunkOffset target_chunk_size)
     : _target_chunk_size{target_chunk_size} {
   auto n_cols = table_config->column_count();
   for (auto col_id = ColumnID{0}; col_id < n_cols; ++col_id) {
