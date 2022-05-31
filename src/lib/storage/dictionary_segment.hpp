@@ -8,11 +8,10 @@
 
 #include "abstract_segment.hpp"
 #include "all_type_variant.hpp"
+#include "abstract_attribute_vector.hpp"
 #include "types.hpp"
 
 namespace opossum {
-
-class AbstractAttributeVector;
 
 // Even though ValueIDs do not have to use the full width of ValueID (uint32_t), this will also work for smaller ValueID
 // types (uint8_t, uint16_t) since after a down-cast INVALID_VALUE_ID will look like their numeric_limit::max().
@@ -40,7 +39,7 @@ class DictionarySegment : public AbstractSegment {
   const std::vector<T>& dictionary() const;
 
   // Returns an underlying data structure.
-  std::shared_ptr<const AbstractAttributeVector> attribute_vector() const;
+  std::shared_ptr<AbstractAttributeVector> attribute_vector() const;
 
   // Return the value represented by a given ValueID.
   const T value_of_value_id(const ValueID value_id) const;
@@ -69,8 +68,8 @@ class DictionarySegment : public AbstractSegment {
   size_t estimate_memory_usage() const final;
 
  protected:
-  std::vector<T> _dictionary;
-  std::shared_ptr<AbstractAttributeVector> _attribute_vector;
+  std::vector<T> _dictionary{};
+  std::shared_ptr<AbstractAttributeVector> _attribute_vector{};
 };
 
 }  // namespace opossum

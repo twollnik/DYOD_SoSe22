@@ -9,6 +9,7 @@
 
 #include "../lib/resolve_type.hpp"
 #include "../lib/storage/table.hpp"
+#include "../lib/storage/dictionary_segment.hpp"
 
 namespace opossum {
 
@@ -77,6 +78,36 @@ TEST_F(StorageTableTest, GetColumnIdByName) {
 
 TEST_F(StorageTableTest, GetChunkSize) { EXPECT_EQ(table.target_chunk_size(), 2u); }
 
-TEST_F(StorageTableTest, CompressChunk) { EXPECT_THROW(table.compress_chunk(ChunkID{1}), std::exception); }
+TEST_F(StorageTableTest, CompressChunk) { 
+
+  table.append({4, "Hello"});
+  table.append({6, "Hello"});
+  table.append({3, "!"});
+
+  table.compress_chunk(ChunkID{0});
+
+  auto encoded_chunk = table.get_chunk(ChunkID{0});
+  auto dict_seg_0 = static_cast<DictionarySegment<int>>(encoded_chunk->get_segment(ColumnID{0}));
+  auto dict_seg_1 = static_cast<DictionarySegment<std::string>>(encoded_chunk->get_segment(ColumnID{1}));
+  auto att_vec_0 = dict_seg_0.attribute_vector();
+  auto att_vec_1 = dict_seg_1.attribute_vector();
+
+  EXPECT_EQ(encoded_chunk->size(), 2u);
+  EXPECT_EQ(encoded_chunk->column_count(), 2u);
+  EXPECT_EQ(dict_seg_0.dictionary(), (std::vector<int>{4,6}));
+  EXPECT_EQ(dict_seg_1.dictionary(), (std::vector<std::string>{"Hello"}));
+  EXPECT_EQ(att_vec_0->get(0), 0);
+  EXPECT_EQ(att_vec_0->get(1), 1);
+  EXPECT_EQ(att_vec_1->get(0), 0);
+  EXPECT_EQ(att_vec_1->get(1), 0);
+  EXPECT_ANY_THROW(att_vec_0->get(2));
+  EXPECT_ANY_THROW(att_vec_1->get(2));
+
+  EXPECT_ANY_THROW(table.compress_chunk(ChunkID{3}));
+
+  // regular table functions should still work as expected
+  EXPECT_EQ(table.row_count(), 3u);
+  EXPECT_EQ(table.chunk_count(), 2u);
+}
 
 }  // namespace opossum
