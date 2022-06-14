@@ -9,8 +9,7 @@ AbstractOperator::AbstractOperator(const std::shared_ptr<const AbstractOperator>
 void AbstractOperator::execute() { _output = _on_execute(); }
 
 std::shared_ptr<const Table> AbstractOperator::get_output() const {
-  // TODO(student): You should place some meaningful checks here
-
+  Assert(_output, "Operator not executed. Output is NULL."); 
   return _output;
 }
 
