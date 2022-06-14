@@ -6,9 +6,9 @@
 #include <utility>
 #include <vector>
 
+#include "abstract_attribute_vector.hpp"
 #include "abstract_segment.hpp"
 #include "all_type_variant.hpp"
-#include "abstract_attribute_vector.hpp"
 #include "types.hpp"
 
 namespace opossum {
@@ -39,7 +39,7 @@ class DictionarySegment : public AbstractSegment {
   const std::vector<T>& dictionary() const;
 
   // Returns an underlying data structure.
-  std::shared_ptr<AbstractAttributeVector> attribute_vector() const;
+  std::shared_ptr<const AbstractAttributeVector> attribute_vector() const;
 
   // Return the value represented by a given ValueID.
   const T value_of_value_id(const ValueID value_id) const;

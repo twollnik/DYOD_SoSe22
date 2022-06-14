@@ -3,12 +3,10 @@
 #include <memory>
 #include <string>
 #include <vector>
-
+#include "storage/table.hpp"
 #include "types.hpp"
 
 namespace opossum {
-
-class Table;
 
 // AbstractOperator is the abstract super class for all operators. All operators have up to two input tables and one
 // output table. Their lifecycle has three phases:
