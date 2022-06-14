@@ -3,7 +3,6 @@
 #include <memory>
 #include <string>
 #include <vector>
-
 #include "storage/table.hpp"
 #include "types.hpp"
 

@@ -48,6 +48,10 @@ void Table::add_column(const std::string& name, const std::string& type) {
   _chunks.back()->create_and_add_segment(type);
 }
 
+void Table::add_column_definition(const std::string& name, const std::string& type) {
+  // Implementation goes here
+}
+
 void Table::append(const std::vector<AllTypeVariant>& values) {
   if (_chunks.back()->size() >= target_chunk_size()) {
     create_new_chunk();

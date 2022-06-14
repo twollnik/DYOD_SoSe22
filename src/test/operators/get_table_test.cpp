@@ -36,5 +36,4 @@ TEST_F(OperatorsGetTableTest, GetTableName) {
 
   EXPECT_EQ(get_table_oper->table_name(), "TableA");
 }
-
 }  // namespace opossum

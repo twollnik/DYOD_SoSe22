@@ -34,7 +34,7 @@ class ReferenceSegmentTest : public BaseTest {
     _test_table_dict = std::make_shared<Table>(5);
     _test_table_dict->add_column("a", "int");
     _test_table_dict->add_column("b", "int");
-
+    
     for (auto value = int32_t{0}; value <= 24; value += 2) _test_table_dict->append({value, 100 + value});
 
     _test_table_dict->compress_chunk(ChunkID{0});
